@@ -1,0 +1,3 @@
+def url_ok(url):
+    r = requests.head(url)
+    return r.status_code == 200
