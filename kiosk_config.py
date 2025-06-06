@@ -24,6 +24,8 @@ def read_config(filename):
         'screen_brightness_active': 255,
         'screen_brightness_normal': 100,
         'screen_brightness_inactive': 50,
+        'screen_width': 800,
+        'screen_height': 480,
 
         # Barcode reader settings
         'bc_reader_port' : '/dev/ttyACM0',
@@ -47,7 +49,7 @@ def read_config(filename):
     cf = configparser.ConfigParser(allow_no_value=True,
                             converters={'list': lambda x: [int(i.strip()) for i in x.split(',')],
                                         'list_s' : lambda x: [i.strip() for i in x.split(',')],
-                                        'tuple' : lambda x: tuple(x.split(','))})
+                                        'tuple' : lambda x: tuple(int(item) if item.isdigit() else item for item in x.split(','))})
     cf.read(filename)
     #Tuple containing load commands
     commands =(
@@ -64,6 +66,8 @@ def read_config(filename):
         "kiosk_config['screen_brightness_active'] = cf.getint('INTERFACE','screen_brightness_active')",
         "kiosk_config['screen_brightness_normal'] = cf.getint('INTERFACE','screen_brightness_normal')",
         "kiosk_config['screen_brightness_inactive'] = cf.getint('INTERFACE','screen_brightness_inactive')",
+        "kiosk_config['screen_width'] = cf.getint('INTERFACE','screen_width')",
+        "kiosk_config['screen_height'] = cf.getint('INTERFACE','screen_height')",
 
         "kiosk_config['bc_reader_port'] = cf.get('BARCODE','bc_reader_port')",
         "kiosk_config['bc_timeout'] = cf.getfloat('BARCODE','bc_timeout')",
@@ -85,10 +89,13 @@ def read_config(filename):
             exec(c)
         except configparser.Error as e:
             logging.error(e)
+    # Check if log_file is set to 'None' and convert it to None    
+    if kiosk_config['log_file'] == 'None': kiosk_config['log_file'] = None  
+
     return(kiosk_config)
 
 def main():
-    f = '{}/{}'.format(os.getcwd(),'kiosk.ini')
+    f = os.path.join(os.getcwd(),'kiosk.ini')
     cfg = read_config(f)
     print(cfg)
 
