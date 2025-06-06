@@ -78,8 +78,9 @@ def service_thread():
     send_ticket('Initializing barcode reader...',ticket_type=TicketPurpose.BC, queue_tx=queue_from_serv)
 
     barcode_reader = BarcodeReader(
+        bounce=config['bc_reader_bounce'],
         port=config['bc_reader_port'],
-        baudrate=9600,
+        baudrate=config['bc_reader_boudrate'],
         timeout=config['bc_timeout'],
         callback=process_barcode
     )

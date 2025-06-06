@@ -28,6 +28,8 @@ def read_config(filename):
         'screen_height': 480,
 
         # Barcode reader settings
+        'bc_reader_bounce' : 3, # Bounce time in seconds for barcode reader
+        'bc_reader_boudrate' : 9600,
         'bc_reader_port' : '/dev/ttyACM0',
         'bc_timeout' : .5,
         'bc_regex' : '^\d{7,9}#\d{4,5}',
@@ -47,17 +49,16 @@ def read_config(filename):
         return(None)
     
     cf = configparser.ConfigParser(allow_no_value=True,
-                            converters={'list': lambda x: [int(i.strip()) for i in x.split(',')],
-                                        'list_s' : lambda x: [i.strip() for i in x.split(',')],
-                                        'tuple' : lambda x: tuple(int(item) if item.isdigit() else item for item in x.split(','))})
+                                converters={'list'  : lambda x: list(int(item) if item.isdigit() else item for item in x.split(',')),
+                                            'tuple' : lambda x: tuple(int(item) if item.isdigit() else item for item in x.split(','))})
     cf.read(filename)
     #Tuple containing load commands
     commands =(
         "kiosk_config['log_file'] = cf.get('INTERFACE','log_file')",
         "kiosk_config['log_level'] = cf.get('INTERFACE','log_level')",
-        "kiosk_config['languages'] = cf.getlist_s('INTERFACE','languages')",
+        "kiosk_config['languages'] = cf.getlist('INTERFACE','languages')",
         "kiosk_config['assets_loader'] = cf.get('INTERFACE','assets_loader')",
-        "kiosk_config['images'] = cf.getlist_s('INTERFACE','images')",
+        "kiosk_config['images'] = cf.getlist('INTERFACE','images')",
         "kiosk_config['bg_image'] = cf.get('INTERFACE','bg_image')",
         "kiosk_config['font'] = cf.gettuple('INTERFACE','font')",
         "kiosk_config['button_debounce_time_ms'] = cf.getint('INTERFACE','button_debounce_time_ms')",
@@ -69,6 +70,8 @@ def read_config(filename):
         "kiosk_config['screen_width'] = cf.getint('INTERFACE','screen_width')",
         "kiosk_config['screen_height'] = cf.getint('INTERFACE','screen_height')",
 
+        "kiosk_config['bc_reader_bounce'] = cf.getint('BARCODE','bc_reader_bounce')",
+        "kiosk_config['bc_reader_boudrate'] = cf.getint('BARCODE','bc_reader_boudrate')",
         "kiosk_config['bc_reader_port'] = cf.get('BARCODE','bc_reader_port')",
         "kiosk_config['bc_timeout'] = cf.getfloat('BARCODE','bc_timeout')",
         "kiosk_config['bc_regex'] = r'{}'.format(cf.get('BARCODE','bc_regex'))",
