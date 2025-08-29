@@ -1,42 +1,68 @@
 #!/usr/bin/env python3
 
 import serial
-import threading
 import logging
 import time
+from queue import Queue
 
-from kiosk_utils import TicketPurpose, Ticket
+running = False
 
 class BarcodeReader(object):
     '''A class to read barcodes from a serial port and process them with a callback function.'''
-    def __init__(self, port='/dev/ttyACM0', baudrate=9600, timeout=1, callback=None, bounce = 2):
+    def __init__(self, port='/dev/ttyACM0', baudrate=9600, timeout=1, callback=None, bounce=2, config=None, queueTX:Queue=None, ):
         """
         Initialize the BarcodeReader with the given serial port, baud rate, and callback function.
         """
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
-        self.callback = callback
+        self._callback = callback
         self.serial_connection = None
         self.running = False
         self.bounce = bounce
         self._bounce_timer = None
-        self._lock = threading.Lock()
+        self._config = config
+        self._queueTX = queueTX
+        self.status = None
 
+        
     def start(self):
-        """
-        Start the barcode reader by opening the serial connection and initiating the reading loop.
-        """
         try:
             self.serial_connection = serial.Serial(self.port, self.baudrate, timeout=self.timeout)
-            self.running = True
-            self.read_thread = threading.Thread(target=self._read_loop, daemon=True)
-            self.read_thread.start()
             logging.info(f"Barcode reader started on {self.port}")
+            self.running = True
+            self.status = f"OK_opn BC{self.port}"
         except serial.SerialException as e:
-            logging.error(f"{e}")
-            self.running = False
+            logging.error(e)
+            self.status = f"Err_opn BC: {self.port}"
+    
+    def _cb(self, *args, **kwargs):
+        """
+        Internal callback function to handle the barcode read event.
+        Calls the user-defined callback if provided.
+        """
+        if self._callback:
+            self._callback(*args, **kwargs)
+        else:
+            logging.warning("No callback function defined for barcode reader.")
+    
+    def next(self):
+        try:
+            if self.serial_connection.in_waiting > 0:
+                barcode = self.serial_connection.readline().decode('utf-8').strip()
+                self.status = f"OK_read {self.port}"
+                if barcode:
+                    logging.info(f"Barcode read: {barcode}")
+                    if self._bounce_timer is None or time.time() > self._bounce_timer + self.bounce:
+                        self._bounce_timer = time.time()
+                        self._cb(barcode, self._config, self._queueTX)
+                    else:
+                        logging.debug(f"Barcode {barcode} ignored due to bounce protection.")
 
+        except serial.SerialException as e:
+            logging.error(f"Error reading from barcode reader: {e}")
+            self.status = f"Err_read {self.port}"
+    
     def stop(self):
         """
         Stop the barcode reader by closing the serial connection.
@@ -45,40 +71,29 @@ class BarcodeReader(object):
         if self.serial_connection:
             self.serial_connection.close()
             logging.info("Barcode reader stopped.")
-
-    def _read_loop(self):
-        """
-        Internal method to continuously read data from the barcode scanner and send it to the callback.
-        """
-        while self.running:
-            threading.Event().wait(self.timeout)
-            if self._bounce_timer is not None and time.time() > self._bounce_timer + self.bounce:
-                self._bounce_timer = None
-            try:
-                if self.serial_connection.in_waiting > 0:
-                    barcode = self.serial_connection.readline().decode('utf-8').strip()
-                    if barcode:
-                        if not self._bounce_timer and self.callback:
-                            self._bounce_timer = time.time()
-                            with self._lock:
-                                self.callback(barcode)
-            except Exception as e:
-                logging.error(e)
-                self.running = False
-
-def bc_callback(barcode):
+            self.status = f"Stopped {self.port}"
+def bc_callback(*args):
+    """Callback function to handle the barcode read event."""
+    barcode = args[0] if args else "No barcode"
     print(f"Received barcode: {barcode}")
 
 def main():
-    barcode_reader = BarcodeReader(callback=bc_callback,bounce=5)
-    while not barcode_reader.running:
-        threading.Event().wait(1)
-        logging.info('Starting reader')
-        barcode_reader.start()
-    while barcode_reader.running:
-        threading.Event().wait(1)
-        print('.')
+    """Main function to initialize and run the barcode reader."""
+    global running
+    logging.basicConfig(format="%(levelname)s:%(asctime)s - %(message)s", level=logging.DEBUG)
+    logging.info("Starting barcode reader...")
+    bc_reader = BarcodeReader(port='/dev/ttyACM0',baudrate=9600,callback=bc_callback, bounce=5)
+    print(bc_reader.status)
+    running = bc_reader.running
+    while running:
+        print('.', end='', flush=True)  # Print a dot to indicate the listener is running
+        bc_reader.next()
+        time.sleep(1)
+    bc_reader.stop()
 
 if __name__ == '__main__':
-    main()
-
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Barcode reader stopped by user.")
+        running = False
