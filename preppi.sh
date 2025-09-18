@@ -10,10 +10,10 @@ apt-get update && apt-get upgrade -y
 systemctl disable bluetooth.service
 systemctl disable hciuart.service
 
-# ln /opt/kiosk/kiosk.service /lib/systemd/system/kiosk.service
-# ln /opt/kiosk/firstboot.service /lib/systemd/system/firstboot.service
-# ln /opt/kiosk/kiosk.ini /home/pi/kiosk.ini
-# systemctl enable firstboot.service
+ln /opt/kiosk/kiosk.service /lib/systemd/system/kiosk.service
+ln /opt/kiosk/firstboot.service /lib/systemd/system/firstboot.service
+ln /opt/kiosk/kiosk.ini /home/pi/kiosk.ini
+systemctl enable firstboot.service
 printf "Setting timezone & logs"
 timedatectl set-timezone Europe/Riga
 sed -i '/^# Additional overlays.*/a dtoverlay=pi3-disable-wifi\ndtoverlay=pi3-disable-bt' /boot/config.txt
@@ -84,6 +84,5 @@ unzip "${USER_DIR}Brightness.zip"
 chmod a+x "${USER_DIR}Brightness/install.sh"
 source "${USER_DIR}Brightness/install.sh"
 rm -r "${USER_DIR}Brightness"
-
 
 #/usr/sbin/shutdown -r now
