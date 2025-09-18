@@ -147,7 +147,6 @@ class AnimatedGifLabelAcc(tk.Label):
     def stop_animation(self):
         self._is_animating = False
 
-    
     def stopped(self):
         return not self._is_animating
     

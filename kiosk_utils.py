@@ -12,8 +12,6 @@ import requests
 
 import kiosk_config
 
-
-
 queue_to_gui = Queue()
 config = dict()
 
@@ -112,7 +110,8 @@ def is_working_time(now:str = None, start:str='7:30', end:str='19:00', workdays:
     return (now.weekday() in workdays) and (start_time <= now.time() <= end_time)
 def main():
     config = kiosk_config.read_config(os.path.join(os.getcwd(),'kiosk.ini'))
-
+    #speak_status('assets/barcode_invalidENG.wav', background=True)
+    speak_status(os.path.join(config['assets_loader'], 'start_print{}.wav'.format('LAT')), background=False)
 
 
 if __name__ == '__main__':
