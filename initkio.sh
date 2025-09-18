@@ -7,7 +7,7 @@ systemctl enable kiosk.service
 systemctl disable firstboot.service
 raspi-config --expand-rootfs > /dev/null
 ipo=$(ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1 |  cut -d. -f2);
-newHostname="rapi-kio5-"$ipo
+newHostname="rapi-kio6-"$ipo
 hostnamectl set-hostname ${newHostname} --static
 
 echo ${newHostname} > /etc/hostname
