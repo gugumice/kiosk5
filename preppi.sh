@@ -80,6 +80,7 @@ printf "Install screen brightness utility"
 cd "${USER_DIR}"
 
 wget https://files.waveshare.com/wiki/common/Brightness.zip
+# echo 127 | sudo tee /sys/class/backlight/*/brightness
 unzip "${USER_DIR}Brightness.zip"
 chmod a+x "${USER_DIR}Brightness/install.sh"
 source "${USER_DIR}Brightness/install.sh"
