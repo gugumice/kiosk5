@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 #Type=idle
 Environment="SCRIPT_ARGS=-c /opt/kiosk/kiosk.ini"
-ExecStart="/opt/kiosk/kiomain.py" $SCRIPT_ARGS
+ExecStart="/opt/kiosk/kiosk_main.py" $SCRIPT_ARGS
 
 WorkingDirectory=/opt/kiosk/
 StandardOutput=inherit
