@@ -167,19 +167,6 @@ class AnimatedGifLabelAcc(tk.Label):
 def main():
     logging.basicConfig(format="%(levelname)s:%(asctime)s - %(message)s", level=logging.DEBUG)
     config = kiosk_config.read_config(os.path.join(os.getcwd(),'kiosk.ini'))
-    # print('Config red')
-    # keys = ('animated_icon_sys','animated_icon_prn','animated_icon_bc',
-    #     'animated_icon_ok','animated_icon_not_ok','animated_icon_no_data',
-    #     'animated_icon_in_progress','animated_icon_net')
-    # cache_path = os.path.join(config['assets_loader'],'img_cache')
-    # #keys = ('animated_icon_sys','animated_icon_prn')
-
-    # print('Reading to dict...')
-    # f = gif_frames_to_dict(config=config, gifs_keys=keys)
-    # print(f.keys())
-    # logging.info('Saving to {}...'.format(cache_path))
-    # save_gif_frames(f, cache_path)
-    # print('Reading picle to img_cache')
     image_cache = dict()
     try:
         image_cache = load_gif_frames(os.path.join(config['assets_loader'],'img_cache'))
@@ -191,8 +178,6 @@ def main():
     root = tk.Tk()
     root.geometry("300x300")
     gif_label = AnimatedGifLabelAcc(root, "assets/loading.gif", delay=40, width=200, height=200, img_cache = image_cache)
-    #gif_label = AnimatedGifLabel(root, "assets/scanning-for.gif", delay=40, width=200, height=200, f=1)
-
     gif_label.pack(expand=True)
     gif_label.start_animation(1)
     
