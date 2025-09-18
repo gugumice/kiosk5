@@ -25,7 +25,6 @@ class BarcodeReader(object):
         self._queueTX = queueTX
         self.status = None
 
-        
     def start(self):
         try:
             self.serial_connection = serial.Serial(self.port, self.baudrate, timeout=self.timeout)
