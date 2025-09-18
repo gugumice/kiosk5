@@ -81,7 +81,6 @@ class MainFrame(ctk.CTkFrame):
         normal_img = Image.open(
             os.path.join(config["assets_loader"], config["images"][1])
         )
-
         self._active_button_image = ctk.CTkImage(active_img, size=active_img.size)
         self._normal_button_image = ctk.CTkImage(normal_img, size=normal_img.size)
         self.active_button = config["default_language_index"]
@@ -160,7 +159,6 @@ class MainFrame(ctk.CTkFrame):
                 bttn.configure(image=self._normal_button_image)
         self.queue_from_gui.put((button, config["languages"][button]))
 
-
 class PopupFrame(ctk.CTkFrame):
     """A custom frame class that inherits from CTkFrame.
     It is used to display a popup message.
@@ -192,6 +190,9 @@ class PopupFrame(ctk.CTkFrame):
         self._prev_ticket_type = None
 
     def update(self, ticket: kiosk_utils.Ticket = None):
+        """
+        Updates popup window as ticket is received 
+        """
         self._message_value.set(ticket.ticket_value or "")
         # Icon already loaded?
         if ticket.ticket_type != self._prev_ticket_type:
@@ -211,7 +212,6 @@ class PopupFrame(ctk.CTkFrame):
                 kiosk_utils.TicketPurpose.INC: self._config["animated_icon_no_data"],
             }
             gif_path = os.path.join(self._config["assets_loader"], gif_map[ticket.ticket_type])
-
             self.icon = AnimatedGifLabelAcc(
                 self,
                 gif_path=gif_path,
@@ -263,7 +263,7 @@ class KioskApp(ctk.CTk):
         self.height = config["screen_height"]
         self.width = config["screen_width"]
 
-        # Canvas
+        # Canvas for popup widgets
         self.canvas = tk.Canvas(
             self, height=self.height, width=self.width, background="lightblue"
         )
@@ -333,7 +333,6 @@ def main(polling_int=0.5):
         default=os.path.join(os.getcwd(), "kiosk.ini"),
     )
     args = parser.parse_args()
-
     if not os.path.isfile(args.config):
         print("Config file not found.")
         sys.exit(1)
@@ -357,7 +356,7 @@ def main(polling_int=0.5):
 
     img_cache = load_gif_frames(os.path.join(config["assets_loader"], "img_cache"))
     logging.debug("Finished loading image cache {}".format(len(img_cache)))
-
+    # Start service thread
     th_ev = threading.Event()
     t1 = threading.Thread(
         target=kiosk_service.service_thread,
@@ -371,10 +370,8 @@ def main(polling_int=0.5):
         daemon=True)
     t1.start()
     logging.info("Service_thread: {}".format(t1.is_alive()))
-
     kiosk_app = KioskApp(config=config)
     kiosk_app.mainloop()
-
     print("Exiting application...")
     th_ev.set()
     t1.join()
