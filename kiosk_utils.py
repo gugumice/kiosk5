@@ -86,7 +86,7 @@ def set_brightness(value: int) -> None:
     :param value: Brightness value (0-255)
     """
     try:
-        with open('/sys/class/backlight/rpi_backlight/brightness', 'w') as f:
+        with open('/sys/class/backlight/*/brightness', 'w') as f:
             f.write(str(value))
     except Exception as e:
         logging.error(f"Failed to set brightness: {e}")
