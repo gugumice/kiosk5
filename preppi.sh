@@ -44,6 +44,7 @@ usermod -a -G lpadmin $USER
 usermod -a -G lp $USER
 #Disable CUPS-browsed
 ./change_cups-browsed.sh
+sleep 2
 service cups restart
 
 printf "Install tkinter & stuff"
