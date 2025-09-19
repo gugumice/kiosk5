@@ -22,7 +22,7 @@ printf "Setting logfiles"
 ln -s "${file_path}" /home/pi/kiosk.log
 
 printf "Updating config.sys"
-./update_config.sh "/opt/kiosk/config.txt"
+./update_config.sh "/boot/firmware/config.txt"
 
 printf "Config watchdog"
 addgroup watchdog
