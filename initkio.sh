@@ -3,7 +3,7 @@ systemctl enable kiosk.service;
 systemctl disable firstboot.service;
 raspi-config --expand-rootfs > /dev/null;
 printf "01 10 * * * sudo shutdown -r" >>  /var/spool/cron/crontabs/root;
-
+cp /etc/hosts /etc/hosts.backup
 ipo=$(ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1 |  cut -d. -f2);
 newHostname="rapi-kio6-"$ipo
 
