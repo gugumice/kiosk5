@@ -39,12 +39,13 @@ sed -i '/^\[global\]$/a break-system-packages = true' /etc/pip.conf
 printf "Install & configure CUPS"
 
 apt-get --yes install libcups2-dev cups cups-bsd -y
+sleep 1
 cupsctl --remote-admin --remote-any
-usermod -a -G lpadmin $USER
-usermod -a -G lp $USER
+usermod -aG lpadmin $USER
+usermod -aG lp $USER
 #Disable CUPS-browsed
 ./change_cups-browsed.sh
-sleep 2
+sleep 1
 service cups restart
 
 printf "Install tkinter & stuff"
