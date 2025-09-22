@@ -16,6 +16,7 @@ sudo apt-get install xinit -y
 sudo apt-get install x11-xserver-utils -y
 sudo apt install raspberrypi-ui-mods -y
 sudo apt-get install python3-tk -y
+printf "Changing Xwrapper.config\n"
 sudo sed -i 's/^allowed_users=console$/allowed_users=anybody/' /etc/X11/Xwrapper.config
 
 ln /opt/kiosk/kiosk.service /lib/systemd/system/kiosk.service
