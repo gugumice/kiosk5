@@ -1,5 +1,5 @@
 [Unit]
-Description=Kiosk printer
+Description=Kiosk printer v6
 After=network-online.target
 Wants=network-online.target
 
