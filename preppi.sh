@@ -10,6 +10,14 @@ apt-get update && apt-get upgrade -y
 systemctl disable bluetooth.service
 systemctl disable hciuart.service
 
+printf "Install tkinter & stuff"
+sudo apt-get install xserver-xorg -y
+sudo apt-get install xinit -y
+sudo apt-get install x11-xserver-utils -y
+sudo apt install raspberrypi-ui-mods -y
+sudo apt-get install python3-tk -y
+sudo sed -i 's/^allowed_users=console$/allowed_users=anybody/' /etc/X11/Xwrapper.config
+
 ln /opt/kiosk/kiosk.service /lib/systemd/system/kiosk.service
 ln /opt/kiosk/firstboot.service /lib/systemd/system/firstboot.service
 ln /opt/kiosk/kiosk.ini /home/pi/kiosk.ini
@@ -47,15 +55,6 @@ usermod -aG lp $USER
 ./change_cups-browsed.sh
 sleep 1
 service cups restart
-
-printf "Install tkinter & stuff"
-
-sudo apt-get install xserver-xorg -y
-sudo apt-get install xinit -y
-sudo apt-get install x11-xserver-utils -y
-
-sudo apt install raspberrypi-ui-mods -y
-sudo apt-get install python3-tk -y
 
 printf "Installing venv"
 
