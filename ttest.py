@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+'''
+Testing tkinter, screen orientation, touchscreen
+'''
 
 import tkinter as tk
 from tkinter import ttk
