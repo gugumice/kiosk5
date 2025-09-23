@@ -223,9 +223,7 @@ def bc_callback(*args) -> bool:
     kiosk_utils.send_ticket(ticket_type=kiosk_utils.TicketPurpose.ERR,
                             ticket_animate_cycles = 2,
                             queue_tx=queue_to_gui)
-
-        
-        
+    
 def main():
     global config
     logging.basicConfig(format="%(levelname)s:%(asctime)s - %(message)s", level=logging.DEBUG)
