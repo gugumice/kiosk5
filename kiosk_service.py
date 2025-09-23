@@ -19,6 +19,7 @@ def proc_queue(msg, config=config):
     '''
     logging.debug(f"Processing message: {msg}")
     kiosk_utils.speak_status(os.path.join(config['assets_loader'], 'lang_{}.wav'.format(msg[1])), background=True)
+    wdObj = None #Watchdog object
 
 def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dict = config, queue_from_gui: Queue = None, queue_to_gui: Queue = None):
     global lang
@@ -51,7 +52,9 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
         time.sleep(1)
     s ='\n'.join(('Service thread started',
                 'IP: {}'.format(kiosk_utils.host_info()[0]),
-                'Host: {}'.format(kiosk_utils.host_info()[1])))
+                'Host: {}'.format(kiosk_utils.host_info()[1]),
+                'Watchdog_device: {}'.format(config['watchdog_device'])
+                ))
     kiosk_utils.send_ticket(ticket_value=s,
                             ticket_type=kiosk_utils.TicketPurpose.SYS,
                             ticket_animate_cycles = 2,
@@ -119,9 +122,28 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
     
     queue_from_gui.queue.clear()  # Clear the queue to avoid processing old messages
 
+    # Set up watchdog
+    if config['watchdog_device'] is not None:
+        try:
+            wdObj = open(config['watchdog_device'], "w")
+            logging.info("Watchdog enabled on {}".format(config['watchdog_device']))
+        except Exception as e:
+            logging.error(e)
+            kiosk_utils.send_ticket(ticket_value = 
+                'Error opening {}'.format(config['watchdog_device']),
+                ticket_type=kiosk_utils.TicketPurpose.ERR,
+                ticket_animate_cycles = 1,
+                queue_tx=queue_to_gui)
+    else:
+        logging.info('Watchdog disabled')
+
     # Start the main loop to listen for barcode reads
     while not th_ev.is_set():
         #print('.', end='', flush=True)  # Print a dot to indicate the listener is running
+        #Pat watchdog
+        if wdObj is not None:
+            print('1',file = wdObj, flush = True)
+            
         if time.time() > last_msg_time + config['screen_brightness_to_min'] * 60 \
             and not kiosk_utils.is_working_time(start=config['working_hours'][0],
                                             end=config['working_hours'][1],
