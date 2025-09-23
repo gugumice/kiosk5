@@ -143,7 +143,7 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
         #Pat watchdog
         if wdObj is not None:
             print('1',file = wdObj, flush = True)
-            
+
         if time.time() > last_msg_time + config['screen_brightness_to_min'] * 60 \
             and not kiosk_utils.is_working_time(start=config['working_hours'][0],
                                             end=config['working_hours'][1],
@@ -162,6 +162,9 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
             lang = msg 
         bc_reader.next()
         th_ev.wait(polling_int)  # Wait for the specified interval
+    if wdObj is not None:
+        print('V', file=wdObj, flush=True)
+        print('Watchdog disabled')
 
 def bc_callback(*args) -> bool:
     """
