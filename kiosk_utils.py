@@ -80,13 +80,13 @@ def speak_status(f, background = True)-> None:
         except Exception as e:
             logging.error(f"Error playing sound: {f}, {e}")
 
-def set_brightness(value: int) -> None:
+def set_brightness(value: int, path: str='/sys/class/backlight/rpi_backlight/brightness') -> None:
     """
     Set the screen brightness.
     :param value: Brightness value (0-255)
     """
     try:
-        with open('/sys/class/backlight/*/brightness', 'w') as f:
+        with open(path, 'w') as f:
             f.write(str(value))
     except Exception as e:
         logging.error(f"Failed to set brightness: {e}")
