@@ -5,7 +5,7 @@ raspi-config --expand-rootfs > /dev/null;
 cp /etc/hosts /etc/hosts.backup;
 oldHostname=$(cat /proc/sys/kernel/hostname);
 ipo=$(ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1 |  cut -d. -f2);
-newHostname="rapi-kio5scr-${ipo}"
+newHostname="rapi-kiosk5DSI-${ipo}"
 hostnamectl set-hostname ${newHostname} --static
 # printf ${newHostname} > /etc/hostname
 # sed -i '/^127.0.0.1/s/.*/127.0.0.1\t'${newHostname}'/g' /etc/hosts;
