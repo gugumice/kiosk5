@@ -51,7 +51,11 @@ class KioskButton(ctk.CTkButton):
         """Callback function for button click event."""
         self.master.show_active_button(self.language[0])
         self.master.disable_buttons()
-        kiosk_utils.set_brightness(config["screen_brightness_active"])
+        try:
+            kiosk_utils.set_brightness(config["screen_brightness_active"], config['screen_brightness_path'])
+        except Exception as e:
+            logging.error(e)
+            print(1111)
         self.after(
             config["button_debounce_time_ms"],
             self.master.enable_buttons,
@@ -139,10 +143,12 @@ class MainFrame(ctk.CTkFrame):
                             end=config["working_hours"][1],
                             workdays=config["working_days"],
                         )
-                        else config["screen_brightness_inactive"]
+                        else config["screen_brightness_inactive"],
+                        config['screen_brightness_path']
                     ),
                 ],
         )
+
 
     def enable_buttons(self):
         """Enable all buttons in the frame."""

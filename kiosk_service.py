@@ -98,6 +98,22 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
 
     # Check for printers
     prns = kiosk_report.check_printers(config)
+
+    # Set up watchdog
+    if config['watchdog_device'] is not None:
+        try:
+            wdObj = open(config['watchdog_device'], "w")
+            logging.info("Watchdog enabled on {}".format(config['watchdog_device']))
+        except Exception as e:
+            logging.error(e)
+            kiosk_utils.send_ticket(ticket_value = 
+                'Error opening\n{}'.format(config['watchdog_device']),
+                ticket_type=kiosk_utils.TicketPurpose.ERR,
+                ticket_animate_cycles = 2,
+                queue_tx=queue_to_gui)
+    else:
+        logging.info('Watchdog disabled')
+        
     cnt = 0
     while prns is None:
         cnt += 1
@@ -122,27 +138,12 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
     
     queue_from_gui.queue.clear()  # Clear the queue to avoid processing old messages
 
-    # Set up watchdog
-    if config['watchdog_device'] is not None:
-        try:
-            wdObj = open(config['watchdog_device'], "w")
-            logging.info("Watchdog enabled on {}".format(config['watchdog_device']))
-        except Exception as e:
-            logging.error(e)
-            kiosk_utils.send_ticket(ticket_value = 
-                'Error opening\n{}'.format(config['watchdog_device']),
-                ticket_type=kiosk_utils.TicketPurpose.ERR,
-                ticket_animate_cycles = 2,
-                queue_tx=queue_to_gui)
-    else:
-        logging.info('Watchdog disabled')
 
     # Start the main loop to listen for barcode reads
     while not th_ev.is_set():
         #print('.', end='', flush=True)  # Print a dot to indicate the listener is running
         if wdObj is not None:
             print('1',file = wdObj, flush = True)
-            print('.', end='', flush=True)  # Print a dot to indicate the listener is running
             
         if time.time() > last_msg_time + config['screen_brightness_to_min'] * 60 \
             and not kiosk_utils.is_working_time(start=config['working_hours'][0],
@@ -202,12 +203,11 @@ def bc_callback(*args) -> bool:
                 queue_tx=queue_to_gui)
             if wdObj is not None:
                 print('1',file = wdObj, flush = True)
-                print(':', end='', flush=True)  # Print a dot to indicate the listener is running
             time.sleep(config['report_delay'])
             
             if wdObj is not None:
                 print('1',file = wdObj, flush = True)
-                print(':', end='', flush=True)  # Print a dot to indicate the listener is running
+
             if kiosk_report.print_report(tmp_file=r[1]) is not None:
                 kiosk_utils.send_ticket(ticket_type=kiosk_utils.TicketPurpose.AOK,
                     ticket_animate_cycles = 1,

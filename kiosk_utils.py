@@ -109,10 +109,10 @@ def is_working_time(now:str = None, start:str='7:30', end:str='19:00', workdays:
     end_time = datetime.strptime(end, "%H:%M").time()
     return (now.weekday() in workdays) and (start_time <= now.time() <= end_time)
 def main():
-    #config = kiosk_config.read_config(os.path.join(os.getcwd(),'kiosk.ini'))
+    config = kiosk_config.read_config(os.path.join(os.getcwd(),'kiosk.ini'))
     #speak_status('assets/barcode_invalidENG.wav', background=True)
     #speak_status(os.path.join(config['assets_loader'], 'start_print{}.wav'.format('LAT')), background=False)
-    set_brightness(100)
+    set_brightness(100, config['screen_brightness_path'])
 
 
 if __name__ == '__main__':
