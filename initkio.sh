@@ -15,5 +15,5 @@ sed -i -e 's/'${oldHostname}'/'${newHostname}'/g' /etc/hosts;
 sed -i '/^#NTP=.*/a FallbackNTP=laiks.egl.local' /etc/systemd/timesyncd.conf;
 printf '10.100.20.104   laiks.egl.local\n' >> /etc/hosts;
 printf '10.100.50.102   cache.egl.local\n' >> /etc/hosts;
-printf "01 10 * * * sudo shutdown -r\nn" >>  /var/spool/cron/crontabs/root;
+printf "01 10 * * * sudo shutdown -r\n" >>  /var/spool/cron/crontabs/root;
 /sbin/shutdown -r now;
