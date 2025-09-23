@@ -53,7 +53,7 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
     s ='\n'.join(('Service thread started',
                 'IP: {}'.format(kiosk_utils.host_info()[0]),
                 'Host: {}'.format(kiosk_utils.host_info()[1]),
-                'Watchdog_device: {}'.format(config['watchdog_device'])
+                'Watchdog_device:\n{}'.format(config['watchdog_device'])
                 ))
     kiosk_utils.send_ticket(ticket_value=s,
                             ticket_type=kiosk_utils.TicketPurpose.SYS,
