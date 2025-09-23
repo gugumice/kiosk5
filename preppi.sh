@@ -36,7 +36,7 @@ printf "Updating config.sys\n"
 printf "Config watchdog\n"
 addgroup watchdog
 usermod -a -G watchdog "${USER}"
-printf'KERNEL=="watchdog", MODE="0660", GROUP="watchdog"\n' > /etc/udev/rules.d/60-watchdog.rules 
+printf 'KERNEL=="watchdog", MODE="0660", GROUP="watchdog"\n' > /etc/udev/rules.d/60-watchdog.rules 
 
 printf "Setting touchoad\n"
 ./touchpad_rules.sh
