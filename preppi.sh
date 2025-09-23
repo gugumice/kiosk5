@@ -35,8 +35,9 @@ printf "Updating config.sys\n"
 
 printf "Config watchdog\n"
 addgroup watchdog
-usermod -a -G watchdog "${USER}"
-printf 'KERNEL=="watchdog", MODE="0660", OWNER="${USER}", GROUP="watchdog"\n' > /etc/udev/rules.d/60-watchdog.rules 
+usermod -aG watchdog "${USER}"
+printf 'KERNEL=="watchdog", MODE="0660", OWNER="pi", GROUP="watchdog"\n' > /etc/udev/rules.d/60-watchdog.rules
+# chown pi:kiosk /dev/watchdog
 
 printf "Setting touchoad\n"
 ./touchpad_rules.sh

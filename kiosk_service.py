@@ -19,10 +19,10 @@ def proc_queue(msg, config=config):
     '''
     logging.debug(f"Processing message: {msg}")
     kiosk_utils.speak_status(os.path.join(config['assets_loader'], 'lang_{}.wav'.format(msg[1])), background=True)
-    wdObj = None #Watchdog object
 
 def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dict = config, queue_from_gui: Queue = None, queue_to_gui: Queue = None):
     global lang
+    wdObj = None #Watchdog object
     time.sleep(1)
     lang = [config['default_language_index'], config['languages'][config['default_language_index']]]
     last_msg_time = time.time()
@@ -53,11 +53,11 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
     s ='\n'.join(('Service thread started',
                 'IP: {}'.format(kiosk_utils.host_info()[0]),
                 'Host: {}'.format(kiosk_utils.host_info()[1]),
-                'Watchdog_device:\n{}'.format(config['watchdog_device'])
+                'Watchdog: {}'.format(config['watchdog_device'])
                 ))
     kiosk_utils.send_ticket(ticket_value=s,
                             ticket_type=kiosk_utils.TicketPurpose.SYS,
-                            ticket_animate_cycles = 2,
+                            ticket_animate_cycles = 3,
                             queue_tx=queue_to_gui)
     cnt = 0
     while not kiosk_utils.host_connection_ok(config['url_test']):
@@ -130,9 +130,9 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
         except Exception as e:
             logging.error(e)
             kiosk_utils.send_ticket(ticket_value = 
-                'Error opening {}'.format(config['watchdog_device']),
+                'Error opening\n{}'.format(config['watchdog_device']),
                 ticket_type=kiosk_utils.TicketPurpose.ERR,
-                ticket_animate_cycles = 1,
+                ticket_animate_cycles = 2,
                 queue_tx=queue_to_gui)
     else:
         logging.info('Watchdog disabled')
