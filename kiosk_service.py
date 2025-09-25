@@ -12,7 +12,8 @@ import kiosk_report
 config = dict()
 polling_int = .5
 lang = str()
-wdObj = None #Watchdog object
+wdObj = None
+
 
 def proc_queue(msg, config=config):
     '''
@@ -101,11 +102,8 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
 
     # Set up watchdog
     if config['watchdog_device'] is not None:
-        try:
-            wdObj = open(config['watchdog_device'], "w")
-            logging.info("Watchdog enabled on {}".format(config['watchdog_device']))
-        except Exception as e:
-            logging.error(e)
+        wdObj = kiosk_utils.WatchDog()
+        if wdObj is None:
             kiosk_utils.send_ticket(ticket_value = 
                 'Error opening\n{}'.format(config['watchdog_device']),
                 ticket_type=kiosk_utils.TicketPurpose.ERR,
@@ -113,7 +111,6 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
                 queue_tx=queue_to_gui)
     else:
         logging.info('Watchdog disabled')
-        
     cnt = 0
     while prns is None:
         cnt += 1
@@ -142,8 +139,8 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
     # Start the main loop to listen for barcode reads
     while not th_ev.is_set():
         #print('.', end='', flush=True)  # Print a dot to indicate the listener is running
-        if wdObj is not None:
-            print('1',file = wdObj, flush = True)
+        if wdObj:
+            wdObj.pat()
             
         if time.time() > last_msg_time + config['screen_brightness_to_min'] * 60 \
             and not kiosk_utils.is_working_time(start=config['working_hours'][0],
@@ -166,9 +163,9 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
 
         th_ev.wait(polling_int)  # Wait for the specified interval
 
-    if wdObj is not None:
-        print('V', file=wdObj, flush=True)
-        print('Watchdog disabled')
+    if wdObj:
+        if wdObj.stop():
+            print('Watchdog disabled')
 
 def bc_callback(*args) -> bool:
     """
@@ -202,11 +199,11 @@ def bc_callback(*args) -> bool:
                 ticket_animate_cycles = 2,
                 queue_tx=queue_to_gui)
             if wdObj is not None:
-                print('1',file = wdObj, flush = True)
+                wdObj.pat()
             time.sleep(config['report_delay'])
             
             if wdObj is not None:
-                print('1',file = wdObj, flush = True)
+                wdObj.pat()
 
             if kiosk_report.print_report(tmp_file=r[1]) is not None:
                 kiosk_utils.send_ticket(ticket_type=kiosk_utils.TicketPurpose.AOK,

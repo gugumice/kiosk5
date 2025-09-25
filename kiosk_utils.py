@@ -12,6 +12,8 @@ import requests
 
 import kiosk_config
 
+from time import sleep
+
 queue_to_gui = Queue()
 config = dict()
 
@@ -108,12 +110,40 @@ def is_working_time(now:str = None, start:str='7:30', end:str='19:00', workdays:
     start_time = datetime.strptime(start, "%H:%M").time()
     end_time = datetime.strptime(end, "%H:%M").time()
     return (now.weekday() in workdays) and (start_time <= now.time() <= end_time)
+
+class WatchDog(object):
+    def __init__(self, wd_device:str = '/dev/watchdog'):
+        try:
+            self._wd = open(wd_device, "w")
+        except Exception as e:
+            logging.error('Error opening {}: {}'.format(wd_device, e))
+            return(None)
+        
+    def pat(self):
+        try:
+            print('1',file = self._wd, flush = True)
+            print('.', end='', flush=True) 
+            return(True)
+        except:
+            return(False)
+
+    def stop(self):
+        try:
+            print('V',file = self._wd, flush = True)
+            return(True)
+        except:
+            return(False)
 def main():
     config = kiosk_config.read_config(os.path.join(os.getcwd(),'kiosk.ini'))
     #speak_status('assets/barcode_invalidENG.wav', background=True)
     #speak_status(os.path.join(config['assets_loader'], 'start_print{}.wav'.format('LAT')), background=False)
-    set_brightness(100, config['screen_brightness_path'])
-
-
+    #set_brightness(100, config['screen_brightness_path'])
+    #wdObj = WatchDog(config['watchdog_device'])
+    for i in range(0,20):
+        if wdObj:
+            wdObj.pat()
+        sleep(1)
+    wdObj.stop()
+    print('stopped')
 if __name__ == '__main__':
     main()

@@ -258,6 +258,7 @@ class KioskApp(ctk.CTk):
 
     def __init__(self, config=config, queue_to_gui: Queue = queue_to_gui):
         super().__init__()
+        self.bind('<Control-slash>', quit)      # forward-slash
         self.bg_image = (
             tk.PhotoImage(
                 file=os.path.join(config["assets_loader"], config["bg_image"])
@@ -292,6 +293,11 @@ class KioskApp(ctk.CTk):
 
         self.queue_to_gui = queue_to_gui
         self.check_queue()
+    
+    def quit(self, event):
+        print('\nExit requested by user')
+        with open('/dev/watchdog', "w") as wd:
+            print('V', file = wd, flush=True)
 
     def check_queue(self):
         #print("^", end="", flush=True)  # heartbeat
