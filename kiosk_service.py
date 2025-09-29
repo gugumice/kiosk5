@@ -164,6 +164,8 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
 def bc_callback(*args) -> bool:
     """
     Callback function to handle the barcode read event.
+    time.sleep used to ~ sync screen & audio with printer as there is no real-time feedback from printer.
+    
     """
     global lang, wdObj
     barcode = args[0]
@@ -183,7 +185,7 @@ def bc_callback(*args) -> bool:
                 ticket_type=kiosk_utils.TicketPurpose.AOK,
                 ticket_animate_cycles = 1,
                 queue_tx=queue_to_gui)
-        time.sleep(1.5)
+        time.sleep(1)
         if wdObj:
             wdObj.pat()
 
@@ -192,6 +194,7 @@ def bc_callback(*args) -> bool:
             kiosk_utils.send_ticket(ticket_type=kiosk_utils.TicketPurpose.PRN,
                 ticket_animate_cycles = 2,
                 queue_tx=queue_to_gui)
+            
             if wdObj is not None:
                 wdObj.pat()
             time.sleep(config['report_delay'])
@@ -213,7 +216,8 @@ def bc_callback(*args) -> bool:
                         queue_tx=queue_to_gui)
             kiosk_utils.speak_status(os.path.join(config['assets_loader'], 'not_ready{}.wav'.format(lang[1])), background=False)
             return()
-
+        if wdObj:
+                wdObj.pat()
         kiosk_utils.send_ticket(ticket_type=kiosk_utils.TicketPurpose.ERR,
                                     ticket_animate_cycles = 2,
                                     queue_tx=queue_to_gui)
