@@ -96,10 +96,6 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
                         ticket_type=kiosk_utils.TicketPurpose.BCR,
                         ticket_animate_cycles = 1,
                         queue_tx=queue_to_gui)
-
-    # Check for printers
-    prns = kiosk_report.check_printers(config)
-
     # Set up watchdog
     if config['watchdog_device'] is not None:
         wdObj = kiosk_utils.WatchDog()
@@ -112,6 +108,9 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
     else:
         logging.info('Watchdog disabled')
     cnt = 0
+    
+    # Check for printers
+    prns = kiosk_report.check_printers(config)
     while prns is None:
         cnt += 1
         kiosk_utils.send_ticket(ticket_value='No printers found\non CUPS\nRetrying ({})...'.format(cnt),
