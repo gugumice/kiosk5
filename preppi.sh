@@ -11,13 +11,13 @@ systemctl disable bluetooth.service
 systemctl disable hciuart.service
 
 printf "Install tkinter & stuff\n"
-sudo apt-get install xserver-xorg -y
-sudo apt-get install xinit -y
-sudo apt-get install x11-xserver-utils -y
-sudo apt install raspberrypi-ui-mods -y
-sudo apt-get install python3-tk -y
+apt-get install xserver-xorg -y
+apt-get install xinit -y
+apt-get install x11-xserver-utils -y
+apt install raspberrypi-ui-mods -y
+apt-get install python3-tk -y
 printf "Changing Xwrapper.config\n"
-sudo sed -i 's/^allowed_users=console$/allowed_users=anybody/' /etc/X11/Xwrapper.config
+sed -i 's/^allowed_users=console$/allowed_users=anybody/' /etc/X11/Xwrapper.config
 
 ln /opt/kiosk/kiosk.service /lib/systemd/system/kiosk.service
 ln /opt/kiosk/firstboot.service /lib/systemd/system/firstboot.service
@@ -62,7 +62,7 @@ service cups restart
 
 printf "Installing venv\n"
 
-sudo apt install python3-venv -y
+apt install python3-venv -y
 python3 -m venv --system-site-packages "${WORK_DIR}.venv"
 source .venv/bin/activate
 pip3 install customtkinter
@@ -73,7 +73,7 @@ printf "Install screen brightness utility\n"
 cd "${USER_DIR}"
 
 wget https://files.waveshare.com/wiki/common/Brightness.zip
-# echo 127 | sudo tee /sys/class/backlight/*/brightness
+# echo 127 |tee /sys/class/backlight/*/brightness
 unzip "${USER_DIR}Brightness.zip"
 chmod a+x "${USER_DIR}Brightness/install.sh"
 source "${USER_DIR}Brightness/install.sh"
