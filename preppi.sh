@@ -68,6 +68,7 @@ source .venv/bin/activate
 pip3 install customtkinter
 pip3 install pillow
 pip3 install pyserial
+pip3 --no-input install pycups
 
 printf "Install screen brightness utility\n"
 cd "${USER_DIR}"
