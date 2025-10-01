@@ -43,7 +43,7 @@ printf "Setting touchoad\n"
 ./touchpad_rules.sh
 
 printf "Setting PIP\n"
-apt-get --yes install python3-pi
+apt-get --yes install python3-pip
 ####
 apt-get install python3-pil.imagetk
 sed -i '/^\[global\]$/a break-system-packages = true' /etc/pip.conf
