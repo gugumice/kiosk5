@@ -32,8 +32,8 @@ def read_config(filename):
         'button_frame_height': 500,
         'button_frame_width': 300,
         #Settings for screen size
-        'screen_width': 800,
-        'screen_height': 480,
+        'screen_width': 480,
+        'screen_height': 800,
         #Settings for popup messages
         'popup_display_time': 5000,
 
