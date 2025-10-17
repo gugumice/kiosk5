@@ -55,7 +55,6 @@ class KioskButton(ctk.CTkButton):
             kiosk_utils.set_brightness(config["screen_brightness_active"], config['screen_brightness_path'])
         except Exception as e:
             logging.error(e)
-            print(1111)
         self.after(
             config["button_debounce_time_ms"],
             self.master.enable_buttons,
