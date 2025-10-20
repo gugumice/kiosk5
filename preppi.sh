@@ -9,9 +9,9 @@ systemctl disable bluetooth.service
 systemctl disable hciuart.service
 
 printf "Install tkinter & stuff\n"
-# apt-get install xserver-xorg -y
-# apt-get install xinit -y
-# apt-get install x11-xserver-utils -y
+apt-get install xserver-xorg -y
+apt-get install xinit -y
+apt-get install x11-xserver-utils -y
 apt install raspberrypi-ui-mods -y
 apt-get install python3-tk -y
 printf "Changing Xwrapper.config\n"
