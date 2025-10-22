@@ -118,18 +118,19 @@ class MainFrame(ctk.CTkFrame):
                 button.idle()
 
     def set_def_timeout(self):
-        logging.info('setting default timeout: {}'.format(self.config["button_reset_to_default_time_ms"]))
+        logging.info('setting default timeout: {}'.format(self.config['button_reset_to_default_time_ms']))
         kiosk_utils.set_brightness(
-            config["screen_brightness_normal"]
+            self.config['screen_brightness_normal']
             if kiosk_utils.is_working_time(
-                start=config["working_hours"][0],
-                end=config["working_hours"][1],
-                workdays=config["working_days"],
+                start=self.config['working_hours'][0],
+                end=self.config['working_hours'][1],
+                workdays=self.config['working_days'],
             )
-            else config["screen_brightness_inactive"],
-            config['screen_brightness_path']
+            else
+                self.config['screen_brightness_inactive'],
+                        self.config['screen_brightness_path']
         )
-        self._reset_to_default_bttn = self.after(self.config["button_reset_to_default_time_ms"],
+        self._reset_to_default_bttn = self.after(self.config['button_reset_to_default_time_ms'],
                                             self.set_to_default_bttn)
 
     def set_to_default_bttn(self):
@@ -147,6 +148,10 @@ class MainFrame(ctk.CTkFrame):
         self.disable_buttons(self.selected_button)
         self.after(self.config['button_debounce_time_ms'], self.enable_buttons, self.selected_button)
         #Reset to def button & check screen backlight
+        try:
+            kiosk_utils.set_brightness(self.config["screen_brightness_active"], self.config['screen_brightness_path'])
+        except Exception as e:
+            logging.error(e)
         if self._reset_to_default_bttn:
             self.after_cancel(self._reset_to_default_bttn)
         self.set_def_timeout()
