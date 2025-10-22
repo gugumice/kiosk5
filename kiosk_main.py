@@ -1,357 +1,202 @@
 #!/usr/bin/env python3
 
-import os
-import sys
-import time
-import argparse
-import logging
-import threading
-from queue import Queue
 
 import tkinter as tk
 import customtkinter as ctk
 from PIL import Image
+import os
+import logging
 
-import kiosk_utils
+from queue import Queue
+
 import kiosk_config
-import kiosk_service
-from kiosk_animated_label import AnimatedGifLabelAcc, load_gif_frames
+import kiosk_utils
 
-
-# Global vars
-config = {}
-queue_from_gui = Queue()
+config = dict()
 queue_to_gui = Queue()
-img_cache = {}
-
-# Polling interval for service thread (BC reader etc...)
-polling_int = 0.5
-
 class KioskButton(ctk.CTkButton):
-    """A custom button class that inherits from CTkButton.
-    It represents a button for selecting a report language.
-    """
-
-    def __init__(self, master=None, language: list = None, **kwargs):
-        super().__init__(master, **kwargs)
-        self.language = language
-        self.configure(
-            command=lambda: self.on_click(self.language),
-            text=language[1],
-            border_spacing=5,
-            font=config["font"],
-            fg_color="#0c6875",
-            hover_color="#0c6875",
-            bg_color="transparent",
-            text_color="white",
-        )
+    def __init__(self, master=None,  
+                 lang:list = None,
+                 active: bool = False,
+                 button_debounce_time_ms:int = 5000):
+        super().__init__(master)
         self.master = master
-
-    def on_click(self, language):
-        """Callback function for button click event."""
-        self.master.show_active_button(self.language[0])
-        self.master.disable_buttons()
-        try:
-            kiosk_utils.set_brightness(config["screen_brightness_active"], config['screen_brightness_path'])
-        except Exception as e:
-            logging.error(e)
-        self.after(
-            config["button_debounce_time_ms"],
-            self.master.enable_buttons,
-        )
-        logging.debug(f"Button clicked: {language[1]}")
-
+        self.lang = lang
+        self.active = active
+        self._button_debounce_time_ms = button_debounce_time_ms
+        self.configure(
+            command=lambda: self.master.on_click(self.lang),
+            border_width =20,
+            border_spacing=10,
+            corner_radius = 50,
+            text = self.lang[1],
+            hover = False,
+            font=("Noto Sans Mono",80, "bold"))
+        self.idle()
+        
+    def idle(self):
+        self.configure(state="normal",
+                       border_color="#008ca4",
+                       fg_color=("white","#008ca4"),
+                       text_color= ("#008ca4","white"),
+                       bg_color="transparent")
+    
+    def pressed(self):
+        self.active = True
+        self.configure(
+                text_color="white",
+                fg_color=("#008ca4")
+                )
+    def state_disable(self):
+        self.configure(state = "disabled")
+    
+    def state_normal(self):
+        self.configure(state = "normal")
 
 class MainFrame(ctk.CTkFrame):
     """A custom frame class that inherits from CTkFrame.
     It contains a list of buttons and manages their state.
     """
-
-    def __init__(
-        self,
-        master=None,
-        config: dict = config,
-        queue_from_gui: Queue = queue_from_gui,
-    ):
+    def __init__(self, master=None, width:int = 300, height:int = 500, posXY:list = [100,200], config:dict = None):
         super().__init__(master)
         self.master = master
-        self.queue_from_gui = queue_from_gui
-
-        # Load the images for the buttons
-        active_img = Image.open(
-            os.path.join(config["assets_loader"], config["images"][0])
-        )
-        normal_img = Image.open(
-            os.path.join(config["assets_loader"], config["images"][1])
-        )
-        self._active_button_image = ctk.CTkImage(active_img, size=active_img.size)
-        self._normal_button_image = ctk.CTkImage(normal_img, size=normal_img.size)
-        self.active_button = config["default_language_index"]
-
+        self.config = config
         # Set the size of the frame
-        self.width = 300
-        self.height = 500
+        self.width = width
+        self.height = height
+        self.posXY = posXY
+        self.buttons = list()
+        self.selected_button = config['default_language_index']
         self.configure(
             width=self.width,
             height=self.height,
-            border_width=5,
-            fg_color="transparent",
-            bg_color="transparent",
+            border_width=1,
+            border_color = "grey",
+            fg_color="white",
+            bg_color="white",
         )
+        self._reset_to_default_bttn = None
+        self.init_buttons()
+        self.enable_buttons(self.selected_button)
+        self.set_def_timeout()
+    
+    def init_buttons(self):
+        for lang in enumerate(self.config['languages']):
+            button = KioskButton(self, lang=lang,
+                                 active=False,
+                                 button_debounce_time_ms = 500)
+            self.buttons.append(button)
+            self.buttons[-1].pack(padx=25, pady=25, fill=ctk.BOTH, expand=True)
+            logging.debug('bttns_init: {}'.format(lang))
+    
+    def debounce_buttons(self, debounce_time:int):
+        self.disable_buttons()
+        self.after(debounce_time, self.enable_buttons())
+        logging.debug('bttns_debounce')
 
-        # Variable to store the after_cancel id
-        self._after_cancel_id = None
-
-        # Create a list of buttons
-        self.buttons = []
-        for bttn in enumerate(config["languages"]):
-            self.buttons.append(
-                KioskButton(
-                    self,
-                    language=bttn,
-                    text=bttn[1],
-                    image=self._normal_button_image,
-                )
-            )
-            self.buttons[-1].pack(
-                padx=2, pady=2, fill=ctk.BOTH, expand=True
-            )
-
-        # Set the default button to be active
-        self.show_active_button(config["default_language_index"])
-
-    def disable_buttons(self):
-        """Disable all buttons in the frame."""
-        for bttn in self.buttons:
-            bttn.configure(state="disabled")
-
-        # Delete previous after() if it exists
-        if self._after_cancel_id is not None:
-            self.after_cancel(self._after_cancel_id)
-
-        # Schedule new reset of buttons & screen brightness to default state
-        if self.active_button != config["default_language_index"]:
-            self._after_cancel_id = self.after(
-                config["button_reset_to_default_time_ms"],
-                lambda: [
-                    self.show_active_button(config["default_language_index"]),
-                    kiosk_utils.set_brightness(
-                        config["screen_brightness_normal"]
-                        if kiosk_utils.is_working_time(
-                            start=config["working_hours"][0],
-                            end=config["working_hours"][1],
-                            workdays=config["working_days"],
-                        )
-                        else config["screen_brightness_inactive"],
-                        config['screen_brightness_path']
-                    ),
-                ],
-        )
-
-
-    def enable_buttons(self):
-        """Enable all buttons in the frame."""
-        for bttn in self.buttons:
-            bttn.configure(state="normal")
-
-    def show_active_button(self, button: int):
-        """Show the active button to user by changing image."""
-        self.active_button = button
-        for bttn in self.buttons:
-            if bttn.language[0] == button:
-                bttn.configure(image=self._active_button_image)
+    def disable_buttons(self, active_button_index):
+        logging.debug('bttns_disabled')
+        for idx, button in enumerate(self.buttons):
+            button.state_disable()
+            if idx == active_button_index:
+                button.pressed()
             else:
-                bttn.configure(image=self._normal_button_image)
-        self.queue_from_gui.put((button, config["languages"][button]))
+                button.idle()
 
-class PopupFrame(ctk.CTkFrame):
-    """A custom frame class that inherits from CTkFrame.
-    It is used to display a popup message.
-    """
+    def deactivate_buttons(self):
+        logging.debug('bttns_deactivated')
+        for button in self.buttons:
+            button.active = False
 
-    def __init__(self, master=None, config: dict = config):
-        super().__init__(master)
-        self._config = config
-        self.configure(
-            width=self._config["button_frame_width"],
-            height=self._config["button_frame_height"],
-            fg_color="#fff",
-            bg_color="#fff",
-        )
-        self.pack_propagate(False)
+    def enable_buttons(self,active_button_index):
+        logging.debug('bttns_enabled, act: {}'.format(active_button_index))
+        for idx, button in enumerate(self.buttons):
+            button.state_normal()
+            if idx == active_button_index:
+                button.pressed()
+            else:
+                button.idle()
 
-        self._message_value = tk.StringVar(self)
-        self.icon = None
-
-        self.label = ctk.CTkLabel(
-            self,
-            textvariable=self._message_value,
-            font=("DejaVu Sans Mono", 20),
-            justify=tk.LEFT,
-            padx=0,
-            pady=0,
-        )
-        self.label.pack(side=tk.BOTTOM, expand=True, fill=tk.BOTH)
-        self._prev_ticket_type = None
-
-    def update(self, ticket: kiosk_utils.Ticket = None):
-        """
-        Updates popup window as ticket is received 
-        """
-        self._message_value.set(ticket.ticket_value or "")
-        # Icon already loaded?
-        if ticket.ticket_type != self._prev_ticket_type:
-            if self.icon is not None:
-                self.icon.stop_animation()
-                self.icon.destroy()
-                self.icon = None
-            # Choose GIF path by ticket type
-            gif_map = {
-                kiosk_utils.TicketPurpose.SYS: self._config["animated_icon_sys"],
-                kiosk_utils.TicketPurpose.PRN: self._config["animated_icon_prn"],
-                kiosk_utils.TicketPurpose.BCR: self._config["animated_icon_bc"],
-                kiosk_utils.TicketPurpose.NET: self._config["animated_icon_net"],
-                kiosk_utils.TicketPurpose.ERR: self._config["animated_icon_not_ok"],
-                kiosk_utils.TicketPurpose.AOK: self._config["animated_icon_ok"],
-                kiosk_utils.TicketPurpose.PRG: self._config["animated_icon_in_progress"],
-                kiosk_utils.TicketPurpose.INC: self._config["animated_icon_no_data"],
-            }
-            gif_path = os.path.join(self._config["assets_loader"], gif_map[ticket.ticket_type])
-            self.icon = AnimatedGifLabelAcc(
-                self,
-                gif_path=gif_path,
-                delay=config["animated_icon_delay"],
-                width=config["animated_icon_width"],
-                height=config["animated_icon_height"],
-                img_cache=img_cache,
+    def set_def_timeout(self):
+        logging.info('setting default timeout: {}'.format(self.config["button_reset_to_default_time_ms"]))
+        kiosk_utils.set_brightness(
+            config["screen_brightness_normal"]
+            if kiosk_utils.is_working_time(
+                start=config["working_hours"][0],
+                end=config["working_hours"][1],
+                workdays=config["working_days"],
             )
-        # show icon
-        self.icon.pack(side=tk.BOTTOM, padx=0, pady=40)
-        self.icon.start_animation(ticket.ticket_animate_cycles)
-
-class KioskPopup(ctk.CTkToplevel):
-    """A custom popup class that inherits from CTkToplevel."""
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.overrideredirect(True)
-        self.geometry(
-            "{}x{}+100+200".format(
-                config["button_frame_width"], config["button_frame_height"]
-            )
+            else config["screen_brightness_inactive"],
+            config['screen_brightness_path']
         )
-        self.title = "KioskPopup"
-        self.attributes("-topmost", True)
-        self.time_created = time.time()
+        self._reset_to_default_bttn = self.after(self.config["button_reset_to_default_time_ms"],
+                                            self.set_to_default_bttn)
 
-        self.frame = PopupFrame(master=self, config=config)
-        self.frame.pack(fill=tk.BOTH, expand=True)
+    def set_to_default_bttn(self):
+        logging.info('setting to default button: {}'.format(self.config['default_language_index']))
+        if self.selected_button != self.config['default_language_index']:
+            self.enable_buttons(self.config['default_language_index'])
 
-    def close_popup(self):
-        """Callback function for closing the popup."""
-        logging.debug("Closing popup")
-        self.destroy()
-        self.update
+        self.set_def_timeout()
 
+
+    def on_click(self, lang):
+        logging.debug('bttns_sel: {}'.format(lang))
+        self.selected_button = lang[0]
+        #Debounce
+        self.disable_buttons(self.selected_button)
+        self.after(self.config['button_debounce_time_ms'], self.enable_buttons, self.selected_button)
+        #Reset to def button & check screen backlight
+        if self._reset_to_default_bttn:
+            self.after_cancel(self._reset_to_default_bttn)
+        self.set_def_timeout()
+        
 class KioskApp(ctk.CTk):
     """Main application class that inherits from CTk."""
-
     def __init__(self, config=config, queue_to_gui: Queue = queue_to_gui):
         super().__init__()
+        self.config = config
         self.bind('<Control-slash>', quit)      # forward-slash
         self.bg_image = (
             tk.PhotoImage(
-                file=os.path.join(config["assets_loader"], config["bg_image"])
+                file=os.path.join(self.config["assets_loader"], self.config["bg_image"])
             )
-            if config["bg_image"]
+            if self.config["bg_image"]
             else None
         )
 
-        self.height = config["screen_height"]
-        self.width = config["screen_width"]
+        self.height = self.config["screen_height"]
+        self.width = self.config["screen_width"]
 
         # Canvas for popup widgets
         self.canvas = tk.Canvas(
             self, height=self.height, width=self.width, background="lightblue"
         )
         self.canvas.pack()
-
         if self.bg_image:
             self.canvas.create_image(0, 0, image=self.bg_image, anchor=ctk.NW)
 
         # Main frame
-        self.frame = MainFrame(self, config=config)
+        self.frame = MainFrame(self, width=self.config['button_frame_width'],
+                                height=self.config['button_frame_height'],
+                                posXY = self.config['button_frame_posXY'],
+                                config = self.config)
         self.popup_window = None
 
         self.canvas.create_window(
-            (100, 200),
+            self.frame.posXY,
             width=self.frame.width,
             height=self.frame.height,
             window=self.frame,
             anchor=tk.NW,
         )
+    # def quit(self, event):
+    #     print('\nExit requested by user')
+    #     quit
 
-        self.queue_to_gui = queue_to_gui
-        self.check_queue()
-    
-    def quit(self, event):
-        print('\nExit requested by user')
-        with open('/dev/watchdog', "w") as wd:
-            print('V', file = wd, flush=True)
-
-    def check_queue(self):
-        #print("^", end="", flush=True)  # heartbeat
-        self.after(500, self.check_queue)
-
-        if self.popup_window and self.popup_window.winfo_exists():
-            if not self.popup_window.frame.icon.stopped():
-                return
-
-        if not self.queue_to_gui.empty():
-            ticket = self.queue_to_gui.get_nowait()
-            if not isinstance(ticket, kiosk_utils.Ticket):
-                logging.error(f"Invalid message: {ticket}")
-                return
-
-            if ticket.ticket_type == kiosk_utils.TicketPurpose.EOT:
-                if self.popup_window and self.popup_window.winfo_exists():
-                    self._close_popup()
-            else:
-                if not self.popup_window or not self.popup_window.winfo_exists():
-                    self.popup_window = KioskPopup(master=self)
-                else:
-                    self.popup_window.deiconify()
-                self.popup_window.frame.update(ticket=ticket)
-        else:
-            self._close_popup()
-
-    def _close_popup(self):
-        if self.popup_window and self.popup_window.winfo_exists():
-            self.popup_window.withdraw()
-
-
-def main(polling_int=0.5):
-    global config, queue_to_gui, queue_from_gui, img_cache
-
-    parser = argparse.ArgumentParser(
-        description="EGL testing report kiosk application."
-    )
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=str,
-        metavar="file",
-        help="Name config file. Default: kiosk.ini",
-        default=os.path.join(os.getcwd(), "kiosk.ini"),
-    )
-    args = parser.parse_args()
-    if not os.path.isfile(args.config):
-        print("Config file not found.")
-        sys.exit(1)
-
-    # Load config
-    config = kiosk_config.read_config(args.config)
-
-    # Logging
+def main():
+    config = kiosk_config.read_config(os.path.join(os.getcwd(),'kiosk.ini'))
+        # Logging
     if config["log_file"] is None:
         logging.basicConfig(
             format="%(asctime)s - %(message)s",
@@ -364,28 +209,8 @@ def main(polling_int=0.5):
             filemode="w",
             level=os.environ.get("LOGLEVEL", config["log_level"]).upper(),
         )
-
-    img_cache = load_gif_frames(os.path.join(config["assets_loader"], "img_cache"))
-    logging.debug("Finished loading image cache {}".format(len(img_cache)))
-    # Start service thread
-    th_ev = threading.Event()
-    t1 = threading.Thread(
-        target=kiosk_service.service_thread,
-        kwargs=dict(
-            th_ev=th_ev,
-            polling_int=polling_int,
-            config=config,
-            queue_from_gui=queue_from_gui,
-            queue_to_gui=queue_to_gui,
-        ),
-        daemon=True)
-    t1.start()
-    logging.info("Service_thread: {}".format(t1.is_alive()))
     kiosk_app = KioskApp(config=config)
     kiosk_app.mainloop()
-    print("Exiting application...")
-    th_ev.set()
-    t1.join()
 
-if __name__ == "__main__":
-    main(polling_int)
+if __name__ == '__main__':
+    main()
