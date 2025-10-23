@@ -9,11 +9,12 @@ systemctl disable bluetooth.service
 systemctl disable hciuart.service
 
 printf "Install tkinter & stuff\n"
-apt-get install xserver-xorg -y
-apt-get install xinit -y
-apt-get install x11-xserver-utils -y
+# apt-get install xserver-xorg -y
+# apt-get install xinit -y
+# apt-get install x11-xserver-utils -y
 apt install raspberrypi-ui-mods -y
 apt-get install python3-tk -y
+apt-get update && apt-get upgrade -y
 printf "Changing Xwrapper.config\n"
 sed -i 's/^allowed_users=console$/allowed_users=anybody/' /etc/X11/Xwrapper.config
 
@@ -76,5 +77,4 @@ unzip "${USER_DIR}Brightness.zip"
 chmod a+x "${USER_DIR}Brightness/install.sh"
 source "${USER_DIR}Brightness/install.sh"
 rm -r "${USER_DIR}Brightness"
-apt-get update && apt-get upgrade -y
 #/usr/sbin/shutdown -r now
