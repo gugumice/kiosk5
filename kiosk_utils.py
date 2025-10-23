@@ -2,7 +2,6 @@
 ''' A module for utility classes and functions. '''
 
 import os
-
 from datetime import datetime
 from enum import Enum, auto
 from queue import Queue
@@ -138,10 +137,12 @@ def main():
     #speak_status('assets/barcode_invalidENG.wav', background=True)
     #speak_status(os.path.join(config['assets_loader'], 'start_print{}.wav'.format('LAT')), background=False)
     #set_brightness(100, config['screen_brightness_path'])
-    #wdObj = WatchDog(config['watchdog_device'])
+    w = config['watchdog_device']
+    print(w)
+    wdObj = WatchDog(w)
     for i in range(0,20):
         if wdObj:
-            wdObj.pat()
+            print(wdObj.pat())
         sleep(1)
     wdObj.stop()
     print('stopped')
