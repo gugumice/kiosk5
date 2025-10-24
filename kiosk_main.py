@@ -170,6 +170,7 @@ class MainFrame(ctk.CTkFrame):
         except Exception as e:
             logging.error(e)
         if self._reset_to_default_bttn:
+            ############################################## to check ########
             self.after_cancel(self._reset_to_default_bttn)
         self.set_def_timeout()
 
