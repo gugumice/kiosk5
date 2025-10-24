@@ -117,7 +117,7 @@ class MainFrame(ctk.CTkFrame):
             if idx == active_button_index:
                 button.pressed()
                 msg = (active_button_index, self.config["languages"][active_button_index])
-                print(type(queue_from_gui), queue_from_gui, msg)
+                # print(type(queue_from_gui), queue_from_gui, msg)
                 queue_from_gui.put(msg)
             else:
                 button.idle()
@@ -301,7 +301,7 @@ class KioskApp(ctk.CTk):
         self.destroy()
     
     def check_queue(self):
-        print("^", end="", flush=True)  # heartbeat
+        # print("^", end="", flush=True)  # heartbeat
         self.after(500, self.check_queue)
 
         if self.popup_window and self.popup_window.winfo_exists():
