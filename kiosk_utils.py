@@ -121,7 +121,7 @@ class WatchDog(object):
     def pat(self):
         try:
             print('1',file = self._wd, flush = True)
-            print('.', end='', flush=True) 
+            # print('.', end='', flush=True) 
             return(True)
         except:
             return(False)
