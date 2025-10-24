@@ -117,7 +117,6 @@ class MainFrame(ctk.CTkFrame):
             if idx == active_button_index:
                 button.pressed()
                 msg = (active_button_index, self.config["languages"][active_button_index])
-                # print(type(queue_from_gui), queue_from_gui, msg)
                 queue_from_gui.put(msg)
             else:
                 button.idle()
