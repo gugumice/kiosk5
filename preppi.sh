@@ -43,8 +43,8 @@ printf "Setting touchoad\n"
 
 printf "Setting PIP\n"
 apt-get install python3-pip -y
-####
-apt-get install python3-pil.imagetk -y
+sleep 1
+apt-get install --yes python3-pil.imagetk
 sed -i '/^\[global\]$/a break-system-packages = true' /etc/pip.conf
 
 printf "Install & configure CUPS\n"
