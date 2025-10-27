@@ -86,7 +86,7 @@ class MainFrame(ctk.CTkFrame):
         self.configure(
             width=self.width,
             height=self.height,
-            border_width=1,
+            border_width=0,
             border_color = "grey",
             fg_color="white",
             bg_color="white",
@@ -117,6 +117,7 @@ class MainFrame(ctk.CTkFrame):
             if idx == active_button_index:
                 button.pressed()
                 msg = (active_button_index, self.config["languages"][active_button_index])
+                print(type(queue_from_gui), queue_from_gui, msg)
                 queue_from_gui.put(msg)
             else:
                 button.idle()
@@ -170,9 +171,9 @@ class MainFrame(ctk.CTkFrame):
         except Exception as e:
             logging.error(e)
         if self._reset_to_default_bttn:
-            ############################################## to check ########
             self.after_cancel(self._reset_to_default_bttn)
         self.set_def_timeout()
+        self.set
 
 class PopupFrame(ctk.CTkFrame):
     def __init__(self, master=None, config: dict = config):

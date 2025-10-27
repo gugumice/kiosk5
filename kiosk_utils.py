@@ -89,6 +89,7 @@ def set_brightness(value: int, path: str='/sys/class/backlight/rpi_backlight/bri
     try:
         with open(path, 'w') as f:
             f.write(str(value))
+            logging.info('setting brightness to: {}'.format(value))
     except Exception as e:
         logging.error(f"Failed to set brightness: {e}")
     
