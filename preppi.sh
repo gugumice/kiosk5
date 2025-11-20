@@ -12,7 +12,7 @@ printf "Install tkinter & stuff\n"
 apt-get install xserver-xorg -y
 apt-get install xinit -y
 apt-get install x11-xserver-utils -y
-apt install raspberrypi-ui-mods -y
+#apt install raspberrypi-ui-mods -y
 apt-get install python3-tk -y
 apt-get update && apt-get upgrade -y
 printf "Changing Xwrapper.config\n"
