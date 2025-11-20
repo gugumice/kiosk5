@@ -53,6 +53,7 @@ def read_config(filename):
         'text_label_font_size': 20,
         'text_label_font': 'DejaVu Sans Mono',
         'report_not_ready_msg': ['NR','NR','NR'],
+        'report_num_pages': ['NR','NR','NR'],
 
         # Barcode reader settings
         'bc_reader_bounce' : 3, # Bounce time in seconds for barcode reader
@@ -68,8 +69,10 @@ def read_config(filename):
         'url' : 'http://{}/csp/sarmite/ea.kiosk.pdf.cls?HASH={}&LANG={}',
         'url_test' : 'http://10.100.50.102/sarmite/m5menu.csp',
 
+
         #printers':  {"HP": "HP LaserJet Series PCL 6 CUPS"},
         'include_schemes' : ['usb','driverless'],
+        'printers' : {"HP": "HP LaserJet Series PCL 6 CUPS"},
         'watchdog_device' : None
     }
     if not os.path.isfile(filename):
@@ -137,10 +140,11 @@ def read_config(filename):
         "kiosk_config['report_delay'] = cf.getint('REPORT','report_delay')",
         "kiosk_config['url'] = cf.get('REPORT','url')",
         "kiosk_config['url_test'] = cf.get('REPORT','url_test')",
+        "kiosk_config['printers'] = cf.getdict('REPORT','printers')",
         "kiosk_config['button_printer_reset'] = cf.getlist('REPORT','button_printer_reset')",
         "kiosk_config['include_schemes'] = cf.getlist('REPORT','include_schemes')",
         "kiosk_config['report_not_ready_msg'] = cf.getlist('REPORT','report_not_ready_msg')",
-
+        "kiosk_config['report_num_pages'] = cf.getlist('REPORT','report_num_pages')",
         "kiosk_config['watchdog_device'] = cf.getnone('WATCHDOG','watchdog_device')"
         )
     
@@ -156,11 +160,10 @@ def read_config(filename):
 
 def main():
     f = os.path.join(os.getcwd(),'kiosk.ini')
+    logging.basicConfig(format='%(levelname)s:%(asctime)s - %(message)s', level=logging.DEBUG)
     cfg = read_config(f)
-    #print(cfg)
-    l='LAT'
     print(cfg)
-    # print(cfg['button_images']['{}_act'.format(l)])
+
 
 if __name__ == '__main__':
     main()
