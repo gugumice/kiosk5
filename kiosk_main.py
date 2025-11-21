@@ -246,11 +246,11 @@ class KioskPopup(ctk.CTkToplevel):
         self.frame = PopupFrame(master=self, config=config)
         self.frame.pack(fill=tk.BOTH, expand=True)
 
-    # def close_popup(self):
-    #     """Callback function for closing the popup."""
-    #     logger.debug("Closing popup")
-    #     self.destroy()
-    #     self.update
+    def close_popup(self):
+        """Callback function for closing the popup."""
+        logger.debug("Closing popup")
+        self.destroy()
+        self.update
         
 class KioskApp(ctk.CTk):
     """Main application class that inherits from CTk."""
