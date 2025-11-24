@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
-
 import tkinter as tk
 import customtkinter as ctk
-from PIL import Image
-import os
-import sys
+#from PIL import Image
+import os, sys
 import logging
 import argparse
 
@@ -259,7 +257,7 @@ class KioskApp(ctk.CTk):
         self.queue_to_gui = queue_to_gui
         self.config = config
         self.slave_thread = slave_thread
-        self.bind('<Control-x>', self.quit_app)     
+        self.bind('<Escape>', self.quit_app)     
         self.bg_image = (
             tk.PhotoImage(
                 file=os.path.join(self.config["assets_loader"], self.config["bg_image"])
@@ -292,6 +290,11 @@ class KioskApp(ctk.CTk):
             vd = config['watchdog_device']
             try:
                 self._wd = open(vd, "w")
+                kiosk_utils.send_ticket(
+                    ticket_value='Watchdog enabled on:\n{}'.format(config['watchdog_device']),
+                    ticket_type=kiosk_utils.TicketPurpose.SYS,
+                    ticket_animate_cycles = 1,
+                    queue_tx=queue_to_gui)
             except Exception as e:
                 logging.error(e)
 
@@ -304,7 +307,7 @@ class KioskApp(ctk.CTk):
         )
         self.check_queue()
     
-    def quit_app(self,e):
+    def quit_app(self,evt):
         print('\nExit requested by user')
         if self._wd is not None:
             print('V',file = self._wd, flush = True)

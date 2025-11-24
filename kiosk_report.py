@@ -9,6 +9,15 @@ from queue import Queue
 
 import kiosk_config
 
+def connect_to_cups() -> cups.Connection:
+    try:
+        conn = cups.Connection()
+        logging.debug('CUPS Connection established')
+    except cups.IPPError as e:
+        logging.error(f"Failed to connect to CUPS server: {e}")
+        return(None)
+    return(conn)
+
 def check_default(ap,ip,dp) -> bool:
     '''
     Check if currend default printer is avilable
@@ -58,15 +67,9 @@ def add_printer(conn:cups.Connection = None,
         conn.setPrinterShared(params['name'],False)
         conn.setDefault(params['name'])
         conn.enablePrinter(params['name'])
-        conn.printTestPage(params['name'])
     return(True, params['name'])
 
 def delete_printers(conn:cups.Connection = None, printers:dict = None):
-    if conn is None:
-        try:
-            conn = cups.Connection()
-        except cups.IPPError as e:
-            logging.error(f"Failed to connect to CUPS server: {e}")
     printers = conn.getPrinters()
     if printers:
         for printer in printers:
@@ -76,17 +79,7 @@ def delete_printers(conn:cups.Connection = None, printers:dict = None):
             except cups.IPPError as e:
                 logging.error(f"Failed to delete printer {printer}: {e}")
 
-def init_printer(config:dict = None, queue_to_gui:Queue = None):
-    try:
-        conn = cups.Connection()
-    except cups.IPPError as e:
-        logging.error(f"Failed to connect to CUPS server: {e}")
-        kiosk_utils.send_ticket(ticket_value=("Failed to connect to CUPS server"),
-                ticket_type=kiosk_utils.TicketPurpose.PRN,
-                ticket_animate_cycles = 1,
-                queue_tx = queue_to_gui)
-        return(False)
-        
+def init_printer(conn:cups.Connection = None, config:dict = None, queue_to_gui:Queue = None):        
     avilable_printers = conn.getDevices(include_schemes = config['include_schemes'])
     # No printers detected - exiting
     if len(avilable_printers) == 0:
@@ -115,13 +108,13 @@ def init_printer(config:dict = None, queue_to_gui:Queue = None):
             return(True)
         # Default printer not avlilable
         default_printer = False
-    delete_printers(conn, printers = installed_printers)
+    delete_printers(conn=conn, printers = installed_printers)
     kiosk_utils.send_ticket(ticket_value='{} printer(s) found\n{}'.format(len(avilable_printers),
                                                                           '\n'.join([pr[:18] for pr in avilable_printers])),
                     ticket_type=kiosk_utils.TicketPurpose.PRN,
                     ticket_animate_cycles = 1,
                     queue_tx=queue_to_gui)
-    if add_printer(conn, allowed_printers=config['printers'],
+    if add_printer(conn = conn, allowed_printers=config['printers'],
                     avilable_printers=avilable_printers):
         default_printer = conn.getDefault()
         kiosk_utils.send_ticket(ticket_value='{}\nprinter installed'.format(default_printer),
@@ -129,6 +122,7 @@ def init_printer(config:dict = None, queue_to_gui:Queue = None):
                 ticket_animate_cycles = 1,
                 queue_tx=queue_to_gui)
         logging.info('Printer {} installed'.format(default_printer))
+        conn.printTestPage(default_printer)
     else:
         kiosk_utils.send_ticket(ticket_value='Error installing printer',
             ticket_type=kiosk_utils.TicketPurpose.ERR,

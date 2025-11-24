@@ -4,6 +4,7 @@ import threading
 import os,re
 import time
 from queue import Queue
+import cups
 
 import kiosk_utils
 from kiosk_bcr import BarcodeReader
@@ -12,6 +13,8 @@ import kiosk_report
 config = dict()
 polling_int = .5
 lang = str()
+
+conn = None #cups.Connection object placeholder
 
 def proc_queue(msg, config=config):
     '''
@@ -22,15 +25,25 @@ def proc_queue(msg, config=config):
 
 def service_thread(th_ev: threading.Event, polling_int: float = 0.5,
                    config: dict = None, queue_from_gui: Queue = None, queue_to_gui: Queue = None):
-    global lang
+    global lang, conn
     time.sleep(1)
     
     lang = [config['default_language_index'], config['languages'][config['default_language_index']]]
     last_msg_time = time.time()
-    
-    # Check for request to delete printers in CUPS
-    time.sleep(1)
+    conn = None
     queue_from_gui.queue.clear()  # Clear the queue to avoid processing old messages
+    
+    while conn is None:
+        conn =  kiosk_report.connect_to_cups()
+        if not conn:
+            kiosk_utils.send_ticket(ticket_value = 
+            'Error connecting to CUPS',
+            ticket_type=kiosk_utils.TicketPurpose.ERR,
+            ticket_animate_cycles = 1,
+            queue_tx=queue_to_gui)
+            time.sleep(5)
+
+    # Check for request to delete printers in CUPS
     kiosk_utils.speak_status(os.path.join(config['assets_loader'], 'attn.wav'), background=True)
     kiosk_utils.send_ticket(ticket_value='<{}> to reset printers'.format(config['languages'][1]),
                         ticket_type=kiosk_utils.TicketPurpose.PRN,
@@ -43,11 +56,17 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5,
         last_msg_time = time.time()
         if msg[0] == 1:
             logging.info(f"Printer reset request: {msg}")
-            kiosk_report.delete_printers()
+            kiosk_report.delete_printers(conn=conn)
             kiosk_utils.send_ticket(ticket_value='Deleting all printers\non CUPS',
                     ticket_type=kiosk_utils.TicketPurpose.PRN,
                     ticket_animate_cycles = 1,
                     queue_tx=queue_to_gui)
+            time.sleep(3)
+            # Check for printers
+    printer_ok = False
+    while not printer_ok:
+        printer_ok = kiosk_report.init_printer(conn = conn, config = config, queue_to_gui = queue_to_gui)
+        time.sleep(3)
 
     # Check Connection to Cache host
         time.sleep(1)
@@ -99,12 +118,7 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5,
                         queue_tx=queue_to_gui)
 
     
-    # Check for printers
-    printer_ok = False
 
-    while not printer_ok:
-        printer_ok = kiosk_report.init_printer(config, queue_to_gui = queue_to_gui)
-        time.sleep(3)
 
     #END of the startup sequence
     #Clear popup screen
@@ -140,7 +154,7 @@ def bc_callback(*args) -> bool:
     time.sleep used to ~ sync screen & audio with printer as there is no real-time feedback from printer.
     
     """
-    global lang
+    global lang, conn
     barcode = args[0]
     config = args[1]
     queue_to_gui = args[2]
@@ -177,11 +191,12 @@ def bc_callback(*args) -> bool:
             
             time.sleep(config['report_delay'])
 
-            if kiosk_report.print_report(tmp_file=r[1]) is not None:
+            if kiosk_report.print_report(conn=conn, tmp_file=r[1]) is not None:
                 kiosk_utils.send_ticket(ticket_type=kiosk_utils.TicketPurpose.AOK,
                     ticket_animate_cycles = 1,
                     queue_tx=queue_to_gui)
                 kiosk_utils.speak_status(os.path.join(config['assets_loader'], 'end_print{}.wav'.format(lang[1])), background=False)
+                return()
 
         if r[0] == 409:
             kiosk_utils.send_ticket(ticket_value = 
