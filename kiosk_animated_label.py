@@ -70,7 +70,6 @@ def load_gif_frames(source_dir:str=None):
     if not os.path.exists(source_dir):
         raise Exception('{} not found.'.format(source_dir))
     pickle_files = [f for f in os.listdir(source_dir) if f.endswith(".pkl")]
-
     for f in pickle_files:
         p = os.path.join(source_dir,f)
         logging.debug('Writing {} to cache'.format(p))
@@ -88,6 +87,9 @@ class AnimatedGifLabelAcc(tk.Label):
         self.delay = delay  # Time between frames in ms
         self.width = width
         self.height =  height
+        self.Bd = 0
+        self.padx = 0
+        self.pady = 0
         self.frames = []
         self.gif_path = gif_path
         self.img_cache = dict() if img_cache is None else img_cache

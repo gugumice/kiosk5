@@ -2,6 +2,7 @@
 import configparser
 import logging
 import os
+import ast
 
 def read_config(filename):
     '''
@@ -15,8 +16,6 @@ def read_config(filename):
         'languages': ['LAT','ENG','RUS'],
         'default_language_index': 0,  # Default language index
         'assets_loader': 'assets', # Path to assets directory, relative to the script
-        'images': ['red_button.png', 'red_button_50.png'], # List of images used in the interface
-        'bg_image': 'EGL_background.png',
         'font': ('DejaVu Sans Mono',50), # Font used in the interface
         'button_debounce_time_ms': 1000, # Time in milliseconds to debounce button presses
         'button_reset_to default_time_ms': 10*1000, # Time in milliseconds to activate default button after last press
@@ -31,6 +30,7 @@ def read_config(filename):
         #Settings for button frame size
         'button_frame_height': 500,
         'button_frame_width': 300,
+        'button_frame_posXY': [100,200],
         #Settings for screen size
         'screen_width': 480,
         'screen_height': 800,
@@ -53,6 +53,7 @@ def read_config(filename):
         'text_label_font_size': 20,
         'text_label_font': 'DejaVu Sans Mono',
         'report_not_ready_msg': ['NR','NR','NR'],
+        'report_num_pages': ['NR','NR','NR'],
 
         # Barcode reader settings
         'bc_reader_bounce' : 3, # Bounce time in seconds for barcode reader
@@ -68,8 +69,10 @@ def read_config(filename):
         'url' : 'http://{}/csp/sarmite/ea.kiosk.pdf.cls?HASH={}&LANG={}',
         'url_test' : 'http://10.100.50.102/sarmite/m5menu.csp',
 
+
         #printers':  {"HP": "HP LaserJet Series PCL 6 CUPS"},
         'include_schemes' : ['usb','driverless'],
+        'printers' : {"HP": "HP LaserJet Series PCL 6 CUPS"},
         'watchdog_device' : None
     }
     if not os.path.isfile(filename):
@@ -79,7 +82,9 @@ def read_config(filename):
     cf = configparser.ConfigParser(allow_no_value=True,
                                 converters={'list'  : lambda x: list(int(item) if item.isdigit() else item for item in x.split(',')),
                                             'tuple' : lambda x: tuple(int(item) if item.isdigit() else item for item in x.split(',')),
-                                            'none'  : lambda x: None if x == 'None' else x})
+                                            'none'  : lambda x: None if x == 'None' else x,
+                                            'dict'  : lambda x: ast.literal_eval(''.join(['{',x,'}']))
+                                            },)
     cf.read(filename)
     #Tuple containing load commands
     commands =(
@@ -87,7 +92,6 @@ def read_config(filename):
         "kiosk_config['log_level'] = cf.get('INTERFACE','log_level')",
         "kiosk_config['languages'] = cf.getlist('INTERFACE','languages')",
         "kiosk_config['assets_loader'] = cf.get('INTERFACE','assets_loader')",
-        "kiosk_config['images'] = cf.getlist('INTERFACE','images')",
         "kiosk_config['bg_image'] = cf.get('INTERFACE','bg_image')",
         "kiosk_config['font'] = cf.gettuple('INTERFACE','font')",
         "kiosk_config['button_debounce_time_ms'] = cf.getint('INTERFACE','button_debounce_time_ms')",
@@ -122,6 +126,7 @@ def read_config(filename):
 
         "kiosk_config['button_frame_height'] = cf.getint('INTERFACE','button_frame_height')",
         "kiosk_config['button_frame_width'] = cf.getint('INTERFACE','button_frame_width')",
+        "kiosk_config['button_frame_posXY'] = cf.getlist('INTERFACE','button_frame_posXY')",
         "kiosk_config['popup_display_time'] = cf.getint('INTERFACE','popup_display_time')",
 
         "kiosk_config['bc_reader_bounce'] = cf.getint('BARCODE','bc_reader_bounce')",
@@ -135,10 +140,11 @@ def read_config(filename):
         "kiosk_config['report_delay'] = cf.getint('REPORT','report_delay')",
         "kiosk_config['url'] = cf.get('REPORT','url')",
         "kiosk_config['url_test'] = cf.get('REPORT','url_test')",
+        "kiosk_config['printers'] = cf.getdict('REPORT','printers')",
         "kiosk_config['button_printer_reset'] = cf.getlist('REPORT','button_printer_reset')",
         "kiosk_config['include_schemes'] = cf.getlist('REPORT','include_schemes')",
         "kiosk_config['report_not_ready_msg'] = cf.getlist('REPORT','report_not_ready_msg')",
-
+        "kiosk_config['report_num_pages'] = cf.getlist('REPORT','report_num_pages')",
         "kiosk_config['watchdog_device'] = cf.getnone('WATCHDOG','watchdog_device')"
         )
     
@@ -154,8 +160,10 @@ def read_config(filename):
 
 def main():
     f = os.path.join(os.getcwd(),'kiosk.ini')
+    logging.basicConfig(format='%(levelname)s:%(asctime)s - %(message)s', level=logging.DEBUG)
     cfg = read_config(f)
     print(cfg)
+
 
 if __name__ == '__main__':
     main()

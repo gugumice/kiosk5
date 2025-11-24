@@ -4,6 +4,7 @@ import threading
 import os,re
 import time
 from queue import Queue
+import cups
 
 import kiosk_utils
 from kiosk_bcr import BarcodeReader
@@ -12,7 +13,8 @@ import kiosk_report
 config = dict()
 polling_int = .5
 lang = str()
-wdObj = None
+
+conn = None #cups.Connection object placeholder
 
 def proc_queue(msg, config=config):
     '''
@@ -21,33 +23,51 @@ def proc_queue(msg, config=config):
     logging.debug(f"Processing message: {msg}")
     kiosk_utils.speak_status(os.path.join(config['assets_loader'], 'lang_{}.wav'.format(msg[1])), background=True)
 
-def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dict = config, queue_from_gui: Queue = None, queue_to_gui: Queue = None):
-    global lang, wdObj
+def service_thread(th_ev: threading.Event, polling_int: float = 0.5,
+                   config: dict = None, queue_from_gui: Queue = None, queue_to_gui: Queue = None):
+    global lang, conn
     time.sleep(1)
+    
     lang = [config['default_language_index'], config['languages'][config['default_language_index']]]
     last_msg_time = time.time()
+    conn = None
+    queue_from_gui.queue.clear()  # Clear the queue to avoid processing old messages
+    
+    while conn is None:
+        conn =  kiosk_report.connect_to_cups()
+        if not conn:
+            kiosk_utils.send_ticket(ticket_value = 
+            'Error connecting to CUPS',
+            ticket_type=kiosk_utils.TicketPurpose.ERR,
+            ticket_animate_cycles = 1,
+            queue_tx=queue_to_gui)
+            time.sleep(5)
 
     # Check for request to delete printers in CUPS
-    time.sleep(1)
-    queue_from_gui.queue.clear()  # Clear the queue to avoid processing old messages
     kiosk_utils.speak_status(os.path.join(config['assets_loader'], 'attn.wav'), background=True)
     kiosk_utils.send_ticket(ticket_value='<{}> to reset printers'.format(config['languages'][1]),
                         ticket_type=kiosk_utils.TicketPurpose.PRN,
                         ticket_animate_cycles = 1,
                         queue_tx=queue_to_gui)
-    
+
     time.sleep(5)
     if not queue_from_gui.empty():
         msg = queue_from_gui.get_nowait()
         last_msg_time = time.time()
         if msg[0] == 1:
             logging.info(f"Printer reset request: {msg}")
-            kiosk_report.delete_printers()
+            kiosk_report.delete_printers(conn=conn)
             kiosk_utils.send_ticket(ticket_value='Deleting all printers\non CUPS',
                     ticket_type=kiosk_utils.TicketPurpose.PRN,
                     ticket_animate_cycles = 1,
                     queue_tx=queue_to_gui)
-            # time.sleep(10)
+            time.sleep(3)
+            # Check for printers
+    printer_ok = False
+    while not printer_ok:
+        printer_ok = kiosk_report.init_printer(conn = conn, config = config, queue_to_gui = queue_to_gui)
+        time.sleep(3)
+
     # Check Connection to Cache host
         time.sleep(1)
     s ='\n'.join(('Service thread started',
@@ -67,6 +87,7 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
                                 ticket_type=kiosk_utils.TicketPurpose.NET,
                                 ticket_animate_cycles=1,
                                 queue_tx=queue_to_gui)
+        time.sleep(1)
 
     kiosk_utils.send_ticket(ticket_value='Host connection OK\n{}'.format(config['url_test'].split('/')[2][:18]),
                             ticket_type=kiosk_utils.TicketPurpose.NET,
@@ -95,48 +116,18 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
                         ticket_type=kiosk_utils.TicketPurpose.BCR,
                         ticket_animate_cycles = 1,
                         queue_tx=queue_to_gui)
-    # Set up watchdog
-    if config['watchdog_device'] is not None:
-        wdObj = kiosk_utils.WatchDog()
-        if wdObj is None:
-            kiosk_utils.send_ticket(ticket_value = 
-                'Error opening\n{}'.format(config['watchdog_device']),
-                ticket_type=kiosk_utils.TicketPurpose.ERR,
-                ticket_animate_cycles = 2,
-                queue_tx=queue_to_gui)
-    else:
-        logging.info('Watchdog disabled')
+
     
-    # Check for printers
-    cnt = 0
-    prns = kiosk_report.check_printers(config)
-    while prns is None:
-        cnt += 1
-        kiosk_utils.send_ticket(ticket_value='No printers found\non CUPS\nRetrying ({})...'.format(cnt),
-                                ticket_type=kiosk_utils.TicketPurpose.PRN,
-                                ticket_animate_cycles = 3,
-                                queue_tx=queue_to_gui)
-        prns = kiosk_report.check_printers(config)
-        time.sleep(5)
-    try:
-        kiosk_utils.send_ticket(ticket_value='{} printer(s) found\n{}'.format(len(prns), '\n'.join([pr[:18] for pr in prns])),
-                            ticket_type=kiosk_utils.TicketPurpose.PRN,
-                            ticket_animate_cycles = 1,
-                            queue_tx=queue_to_gui)
-    except:
-        pass
+
+
     #END of the startup sequence
-    # time.sleep(p)
     #Clear popup screen
     kiosk_utils.send_ticket(ticket_type=kiosk_utils.TicketPurpose.EOT,
                             queue_tx=queue_to_gui)
     queue_from_gui.queue.clear()  # Clear the queue to avoid processing old messages
     # Start the main loop to listen for barcode reads
     while not th_ev.is_set():
-        #print('.', end='', flush=True)  # Print a dot to indicate the listener is running
-        #Pat watchdog
-        if wdObj:
-            wdObj.pat()
+        #print('^', end='', flush=True)  # Print a dot to indicate the listener is running
             
         if time.time() > last_msg_time + config['screen_brightness_to_min'] * 60 \
             and not kiosk_utils.is_working_time(start=config['working_hours'][0],
@@ -157,17 +148,13 @@ def service_thread(th_ev: threading.Event, polling_int: float = 0.5, config: dic
         bc_reader.next()
         th_ev.wait(polling_int)  # Wait for the specified interval
 
-    if wdObj:
-        if wdObj.stop():
-            print('Watchdog disabled')
-
 def bc_callback(*args) -> bool:
     """
     Callback function to handle the barcode read event.
     time.sleep used to ~ sync screen & audio with printer as there is no real-time feedback from printer.
     
     """
-    global lang, wdObj
+    global lang, conn
     barcode = args[0]
     config = args[1]
     queue_to_gui = args[2]
@@ -186,28 +173,31 @@ def bc_callback(*args) -> bool:
                 ticket_animate_cycles = 1,
                 queue_tx=queue_to_gui)
         time.sleep(1)
-        if wdObj:
-            wdObj.pat()
-
         if r[0] == 200:
+            report_pages = kiosk_utils.get_numpages_from_pdf(r[1])
             kiosk_utils.speak_status(os.path.join(config['assets_loader'], 'start_print{}.wav'.format(lang[1])), background=False)
+
+            if report_pages<11:
+                kiosk_utils.speak_status(os.path.join(config['assets_loader'],
+                                                      'NumPages_{}_{}.wav'.format(report_pages, lang[1])), background=False)
+            else:
+                kiosk_utils.speak_status(os.path.join(config['assets_loader'],
+                                        'NumPages_10more_{}.wav'.format(lang[1])), background=False)
+            
             kiosk_utils.send_ticket(ticket_type=kiosk_utils.TicketPurpose.PRN,
                 ticket_animate_cycles = 2,
+                ticket_value='{}:\n{}'.format(config['report_num_pages'][lang[0]], report_pages),
                 queue_tx=queue_to_gui)
             
-            if wdObj is not None:
-                wdObj.pat()
             time.sleep(config['report_delay'])
-            
-            if wdObj:
-                wdObj.pat()
 
-            if kiosk_report.print_report(tmp_file=r[1]) is not None:
+            if kiosk_report.print_report(conn=conn, tmp_file=r[1]) is not None:
                 kiosk_utils.send_ticket(ticket_type=kiosk_utils.TicketPurpose.AOK,
                     ticket_animate_cycles = 1,
                     queue_tx=queue_to_gui)
                 kiosk_utils.speak_status(os.path.join(config['assets_loader'], 'end_print{}.wav'.format(lang[1])), background=False)
                 return()
+
         if r[0] == 409:
             kiosk_utils.send_ticket(ticket_value = 
                         config['report_not_ready_msg'][lang[0]].replace('\\', '\n'),
@@ -216,8 +206,7 @@ def bc_callback(*args) -> bool:
                         queue_tx=queue_to_gui)
             kiosk_utils.speak_status(os.path.join(config['assets_loader'], 'not_ready{}.wav'.format(lang[1])), background=False)
             return()
-        if wdObj:
-                wdObj.pat()
+
         kiosk_utils.send_ticket(ticket_type=kiosk_utils.TicketPurpose.ERR,
                                     ticket_animate_cycles = 2,
                                     queue_tx=queue_to_gui)

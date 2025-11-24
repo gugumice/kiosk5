@@ -2,14 +2,12 @@
 ''' A module for utility classes and functions. '''
 
 import os
-
 from datetime import datetime
 from enum import Enum, auto
 from queue import Queue
-from subprocess import check_output
+import subprocess
 import logging
 import requests
-
 import kiosk_config
 
 from time import sleep
@@ -63,9 +61,19 @@ def host_info() -> list:
     Returns a list of IP address and hostname or None if it fails.
     """
     try:
-        return([check_output(['hostname', '-I']).decode('utf-8').strip(), check_output(['hostname', '-f']).decode('utf-8').strip()]) 
+        return([subprocess.check_output(['hostname', '-I']).decode('utf-8').strip(),
+                subprocess.check_output(['hostname', '-f']).decode('utf-8').strip()]) 
     except:
         return(None)
+    
+def get_numpages_from_pdf(f:str) -> int:
+    result = subprocess.run(
+    ['bash', '-c', 'pdfinfo {} | grep "Pages:"'.format(f)],
+    capture_output=True, text=True
+    )
+    # Store the result in a variable
+    pages_info = result.stdout.strip()
+    return(int(pages_info[6:].strip()))
     
 def speak_status(f, background = True)-> None:
     '''
@@ -90,6 +98,7 @@ def set_brightness(value: int, path: str='/sys/class/backlight/rpi_backlight/bri
     try:
         with open(path, 'w') as f:
             f.write(str(value))
+            logging.info('setting brightness to: {}'.format(value))
     except Exception as e:
         logging.error(f"Failed to set brightness: {e}")
     
@@ -122,7 +131,7 @@ class WatchDog(object):
     def pat(self):
         try:
             print('1',file = self._wd, flush = True)
-            print('.', end='', flush=True) 
+            # print('.', end='', flush=True) 
             return(True)
         except:
             return(False)
@@ -135,15 +144,17 @@ class WatchDog(object):
             return(False)
 def main():
     config = kiosk_config.read_config(os.path.join(os.getcwd(),'kiosk.ini'))
-    #speak_status('assets/barcode_invalidENG.wav', background=True)
+    speak_status('assets/lang_LAT.wav', background=True)
     #speak_status(os.path.join(config['assets_loader'], 'start_print{}.wav'.format('LAT')), background=False)
     #set_brightness(100, config['screen_brightness_path'])
-    #wdObj = WatchDog(config['watchdog_device'])
-    for i in range(0,20):
-        if wdObj:
-            wdObj.pat()
-        sleep(1)
-    wdObj.stop()
-    print('stopped')
+    # w = config['watchdog_device']
+    # print(w)
+    # wdObj = WatchDog(w)
+    # for i in range(0,20):
+    #     if wdObj:
+    #         print(wdObj.pat())
+    #     sleep(1)
+    # wdObj.stop()
+    # print('stopped')
 if __name__ == '__main__':
     main()
