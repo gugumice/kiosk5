@@ -287,17 +287,12 @@ class KioskApp(ctk.CTk):
         self.popup_window = None
         self._wd = None
         if config['watchdog_device'] is not None:
-            vd = config['watchdog_device']
             try:
-                self._wd = open(vd, "w")
-                kiosk_utils.send_ticket(
-                    ticket_value='Watchdog enabled on:\n{}'.format(config['watchdog_device']),
-                    ticket_type=kiosk_utils.TicketPurpose.SYS,
-                    ticket_animate_cycles = 1,
-                    queue_tx=queue_to_gui)
+                self._wd = open(config['watchdog_device'], "w")
+                logging.info('Watchdog enabled on:\n{}'.format(config['watchdog_device']))
             except Exception as e:
                 logging.error(e)
-
+                
         self.canvas.create_window(
             self.frame.posXY,
             width=self.frame.width,
