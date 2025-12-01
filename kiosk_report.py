@@ -123,6 +123,8 @@ def init_printer(conn:cups.Connection = None, config:dict = None, queue_to_gui:Q
                 queue_tx=queue_to_gui)
         logging.info('Printer {} installed'.format(default_printer))
         conn.printTestPage(default_printer)
+        os.system('sudo shutdown -r now')
+                        
     else:
         kiosk_utils.send_ticket(ticket_value='Error installing printer',
             ticket_type=kiosk_utils.TicketPurpose.ERR,
