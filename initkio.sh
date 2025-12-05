@@ -13,7 +13,7 @@ sed -i -e 's/'${oldHostname}'/'${newHostname}'/g' /etc/hosts;
 sed -i '/^#NTP=.*/a FallbackNTP=laiks.egl.local' /etc/systemd/timesyncd.conf;
 printf '10.100.20.104   laiks.egl.local\n' >> /etc/hosts;
 printf '10.100.50.102   cache.egl.local\n' >> /etc/hosts;
-printf "01 10 * * * /sbin/reboot \n" >>  /var/spool/cron/crontabs/root;
+printf "0 1 * * * /sbin/reboot \n" >>  /var/spool/cron/crontabs/root;
 echo crontab -l
 sleep 2
 /sbin/shutdown -r now;
