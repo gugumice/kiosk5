@@ -31,7 +31,7 @@ modify_config_file() {
             printf "#%s\n" "$line" >> "$temp_file"
             printf "dtoverlay=vc4-kms-dsi-7inch\n" >> "$temp_file"
             printf "gpu_mem=256\n" >> "$temp_file"
-            printf "display_rotate=1 #3：90；2: 180； 3: 270\n" >> "$temp_file"
+            printf "display_rotate=3 #1：90；2: 180； 3: 270\n" >> "$temp_file"
             found=1
         else
             printf "%s\n" "$line" >> "$temp_file"
