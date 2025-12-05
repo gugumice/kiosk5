@@ -13,11 +13,11 @@ create_temp_rules_file() {
     {
         #printf "video=DSI-1:800x480M@60,rotate=90\n\n"
         printf "#90°:\n"
-        printf '#ENV{ID_INPUT_TOUCHSCREEN}=="1", ENV{LIBINPUT_CALIBRATION_MATRIX}="0 -1 1 1 0 0"\n\n'
+        printf 'ENV{ID_INPUT_TOUCHSCREEN}=="1", ENV{LIBINPUT_CALIBRATION_MATRIX}="0 -1 1 1 0 0"\n\n'
         printf "#180°:\n"
         printf '#ENV{ID_INPUT_TOUCHSCREEN}=="1", ENV{LIBINPUT_CALIBRATION_MATRIX}="-1 0 1 0 -1 1"\n\n'
         printf "#270°:\n"
-        printf 'ENV{ID_INPUT_TOUCHSCREEN}=="1", ENV{LIBINPUT_CALIBRATION_MATRIX}="0 1 0 -1 0 1"\n'
+        printf '#ENV{ID_INPUT_TOUCHSCREEN}=="1", ENV{LIBINPUT_CALIBRATION_MATRIX}="0 1 0 -1 0 1"\n'
     } > "$tmp"
 
     if [[ ! -s "$tmp" ]]; then
