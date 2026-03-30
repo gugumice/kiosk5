@@ -82,14 +82,14 @@ def load_gif_frames(source_dir:str=None):
 
 class AnimatedGifLabelAcc(tk.Label):
     def __init__(self, master, gif_path:str, delay:int=50, width:int=None, height:int=None, img_cache = None):
-        super().__init__(master)
+        super().__init__(master,
+                        width = width,
+                        height = height,
+                        padx = 0,
+                        pady = 0)
         self.gif_path = gif_path
         self.delay = delay  # Time between frames in ms
-        self.width = width
-        self.height =  height
         self.Bd = 0
-        self.padx = 0
-        self.pady = 0
         self.frames = []
         self.gif_path = gif_path
         self.img_cache = dict() if img_cache is None else img_cache

@@ -34,19 +34,20 @@ class KioskButton(ctk.CTkButton):
                  lang:list = None,
                  active: bool = False,
                  button_debounce_time_ms:int = 5000):
-        super().__init__(master)
-        self.master = master
+        super().__init__(master,
+                        border_width =20,
+                        border_spacing=10,
+                        corner_radius = 50,
+                        hover = False,
+                        font=("Noto Sans Mono",80, "bold"))
+          
         self.lang = lang
         self.active = active
         self._button_debounce_time_ms = button_debounce_time_ms
         self.configure(
             command=lambda: self.master.on_click(self.lang),
-            border_width =20,
-            border_spacing=10,
-            corner_radius = 50,
             text = self.lang[1],
-            hover = False,
-            font=("Noto Sans Mono",80, "bold"))
+                        )     
         self.idle()
         
     def idle(self):
@@ -75,8 +76,13 @@ class MainFrame(ctk.CTkFrame):
     def __init__(self, master=None,
                 width:int = 300, height:int = 500, posXY:list = [100,200],
                 config:dict = None, queue_from_gui:Queue = None):
-        super().__init__(master)
-        self.master = master
+        super().__init__(master,
+            width=width,
+            height=height,
+            border_width=0,
+            border_color = "grey",
+            fg_color="white",
+            bg_color="white",)
         self.config = config
         # Set the size of the frame
         self.width = width
@@ -85,14 +91,6 @@ class MainFrame(ctk.CTkFrame):
         self.buttons = list()
         self.selected_button = config['default_language_index']
         self.queue_from_gui = queue_from_gui
-        self.configure(
-            width=self.width,
-            height=self.height,
-            border_width=0,
-            border_color = "grey",
-            fg_color="white",
-            bg_color="white",
-        )
         self._default_bttn_after = None
         self.init_buttons()
         self.enable_buttons(self.selected_button)
@@ -174,14 +172,14 @@ class MainFrame(ctk.CTkFrame):
 
 class PopupFrame(ctk.CTkFrame):
     def __init__(self, master=None, config: dict = config):
-        super().__init__(master)
+        super().__init__(master,
+                        fg_color="#fff",
+                        bg_color="#fff",
+                        border_width = 0,
+                        width=config["button_frame_width"],
+                        height=config["button_frame_height"],
+                         )
         self._config = config
-        self.configure(
-            width=self._config["button_frame_width"],
-            height=self._config["button_frame_height"],
-            fg_color="#fff",
-            bg_color="#fff",
-            border_width = 0)
         self.pack_propagate(False)
         self._message_value = tk.StringVar(self)
         self.icon = None
