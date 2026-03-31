@@ -48,7 +48,7 @@ apt-get install python3-pil.imagetk -y
 sed -i '/^\[global\]$/a break-system-packages = true' /etc/pip.conf
 
 printf "Install & configure CUPS\n"
-
+sleep 2
 apt-get --yes install libcups2-dev cups cups-bsd -y
 sleep 1
 cupsctl --remote-admin --remote-any
