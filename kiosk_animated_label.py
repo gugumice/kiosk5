@@ -87,6 +87,8 @@ class AnimatedGifLabelAcc(tk.Label):
                         height = height,
                         padx = 0,
                         pady = 0)
+        self.width = width
+        self.height = height
         self.gif_path = gif_path
         self.delay = delay  # Time between frames in ms
         self.Bd = 0
