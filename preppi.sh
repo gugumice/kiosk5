@@ -15,6 +15,7 @@ apt-get install xinit -y
 apt-get install x11-xserver-utils -y
 #apt install raspberrypi-ui-mods -y
 apt-get install python3-tk -y
+
 printf "Changing Xwrapper.config\n"
 sed -i 's/^allowed_users=console$/allowed_users=anybody/' /etc/X11/Xwrapper.config
 
@@ -49,7 +50,10 @@ sed -i '/^\[global\]$/a break-system-packages = true' /etc/pip.conf
 
 printf "Install & configure CUPS\n"
 sleep 2
-apt-get --yes install libcups2-dev cups cups-bsd -y
+# 32 bit
+apt-get install gcc python3-dev libcups2-dev cups cups-bsd -y
+#64 bit
+apt-get install libcups2-dev cups cups-bsd -y
 sleep 1
 cupsctl --remote-admin --remote-any
 usermod -aG lpadmin $USER
