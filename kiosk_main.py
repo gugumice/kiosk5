@@ -138,6 +138,8 @@ class MainFrame(ctk.CTkFrame):
     def set_to_default_bttn(self):
         logger.info('setting to default button: {}'.format(self.config['default_language_index']))
         if self.selected_button != self.config['default_language_index']:
+            self.selected_button = self.config['default_language_index']
+            self.disable_buttons(self.config['default_language_index'])
             self.enable_buttons(self.config['default_language_index'])
         # Set screen backlight to normal or low
         kiosk_utils.set_brightness(
